@@ -73,7 +73,7 @@ class Dataset():
                 preprocessing function and the value is the function itself.
         """
         for name, preprocessFunction in parameters.items():
-            setattr(self, name, preprocessFunction(self.data))
+            setattr(self, name, preprocessFunction(self.dataArray))
     
     def scale(self):
         """
@@ -85,7 +85,7 @@ class Dataset():
         self.dataArray = self.dataArray * (self.interval[1] - self.interval[0])
         self.dataArray += self.interval[0]
         
-    def bin(self, numBins=8):
+    def bin(self, numBins=6):
         """
         Bins self.dataArray numpy array into bins based on self.numBins.
 

@@ -32,7 +32,9 @@ class Solver():
             **parameters: Additional parameters of the algorithm function          
         """
         if self.loss is None:
-            return self.algorithm(dataset = dataset, **parameters)
+            return self.algorithm(dataset = dataset, 
+                                  environment = self.environment, 
+                                  **parameters)
         else:
             return self.algorithm(dataset = dataset, 
                                   lossFunction = self.loss,
@@ -72,7 +74,7 @@ def randomSample(datasetSize, subsetSize, seed=None):
     z[indices] = 1
     return z, indices
 
-def optimize(objective, constraints, environment, solver=cp.GUROBI, 
+def optimize(objective, constraints, environment, solver=cp.SCIP, 
              verbose=False):
     """
     Sets up a cvxpy problem with given objective and constraints and solves it 
@@ -102,6 +104,78 @@ def optimize(objective, constraints, environment, solver=cp.GUROBI,
 
 
 # --- Algorithms ---------------------------------------------------------------
+
+def bestOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
+               maxIterations=None, seed=None, verbose=False, selectBy="row"):
+    time0 = time.time()
+
+    if maxIterations is None:
+        maxIterations = dataset.size[0]
+
+    z = randomSample(dataset.size, subsetSize, seed)[0]
+    minLoss = lossFunction.calculate(dataset, z)
+
+    for i in range(maxIterations):
+        curZ = randomSample(dataset.size, subsetSize, seed)[0]
+        curLoss = lossFunction.calculate(dataset, curZ)
+        if curLoss < minLoss:
+            z = curZ
+            minLoss = curLoss
+
+    time1 = time.time()
+    timeTotal = time1 - time0
+
+    return z, timeTotal, minLoss
+
+
+def averageOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
+               maxIterations=None, seed=None, verbose=False, selectBy="row"):
+    time0 = time.time()
+
+    if maxIterations is None:
+        maxIterations = dataset.size[0]
+
+    z = randomSample(dataset.size, subsetSize, seed)[0]
+    losses = [lossFunction.calculate(dataset, z)]
+
+    for i in range(maxIterations):
+        curZ = randomSample(dataset.size,subsetSize, seed)[0]
+        losses.append(lossFunction.calculate(dataset, curZ))
+
+    avgLoss = np.mean(losses)
+
+    time1 = time.time()
+    timeTotal = time1 - time0
+
+    return z, timeTotal, avgLoss
+
+
+def worstOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
+               maxIterations=None, seed=None, verbose=False, selectBy="row"):
+    """
+    maximize representativeness of a subset of size s of dataset of size n by m
+    according to metric function f using the p-norm
+    """
+    time0 = time.time()
+
+    if maxIterations is None:
+        maxIterations = dataset.size[0]
+
+    z = randomSample(dataset.size, subsetSize, seed)[0]
+    maxLoss = lossFunction.calculate(dataset, z)
+
+    for i in range(maxIterations):
+        curZ = randomSample(dataset.size, subsetSize, seed)[0]
+        curLoss = lossFunction.calculate(dataset, curZ)
+        if curLoss > maxLoss:
+            z = curZ
+            maxLoss = curLoss
+
+    time1 = time.time()
+    timeTotal = time1 - time0
+
+    return z, timeTotal, maxLoss
+
 
 def greedySwap(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
                maxIterations=None, seed=None, verbose=False, selectBy="row"):
@@ -171,6 +245,7 @@ def greedySwap(dataset, lossFunction, subsetSize, solveArray, minLoss=0,
 
     return z, timeTotal, loss # return indices, total time and loss
 
+
 def optimizeCoverage(dataset, environment, subsetSize, verbose=False):
     """
     Optimize subset selection for coverage while minimizing L1 norm.
@@ -202,6 +277,28 @@ def optimizeCoverage(dataset, environment, subsetSize, verbose=False):
                    t >= dataset_coverage - subsetCoverage]
 
     objective = cp.Minimize(cp.sum(t)) # objective is maximizing the sum of t
+    problem = optimize(objective=objective, 
+                       constraints=constraints, 
+                       environment=environment, 
+                       verbose=verbose)
+
+    time_1 = time.time()
+    timeTotal = time_1 - time_0
+
+    return z.value.astype(int), timeTotal, problem.value
+
+
+def optimizeSum(dataset, environment, subsetSize, w, verbose=False):
+
+    time_0 = time.time()
+
+    datasetLength = len(dataset.dataArray)
+    z = cp.Variable(datasetLength, boolean=True) # subset decision vector
+
+    # L1 norm linearization constraints and s constraint
+    constraints = []
+
+    objective = cp.Minimize(w[0]*cp.sum(z) - w[1]*cp.sum(z@dataset.dataArray))
     problem = optimize(objective=objective, 
                        constraints=constraints, 
                        environment=environment, 

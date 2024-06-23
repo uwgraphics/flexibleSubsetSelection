@@ -3,6 +3,7 @@
 # Standard libraries
 import matplotlib
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 
 
@@ -60,18 +61,71 @@ def onPick(event, color):
         line.zorder = 3
     line._axes.figure.canvas.draw_idle()
 
+# --- Error Markers ------------------------------------------------------------
+
+def errorBar(ax, x, vals1, vals2, color):
+    """
+    plot a series of error bars on ax along x between vals1 and vals2 of
+    given color
+    """
+    ax.errorbar(x=x,
+                y=(vals1 + vals2)/2,
+                yerr=abs(vals1 - vals2)/2,
+                ecolor=color,
+                ls="none",
+                elinewidth=3,
+                capsize=5,
+                capthick=1.5,
+                zorder=4)
+
+def errorMarkers(ax, x, vals1, color1, marker1, vals2=None, color2=None, 
+                 marker2=None):
+    """
+    plot a series of error markers on ax along x at vals1 and optionally vals2 
+    of given colors
+    """
+
+    for i in x:
+        if vals1[i].size > 0:
+            for j in range(vals1[i].size):
+                ax.plot(x[i], vals1[i][j], 
+                        color = color1, 
+                        markersize = 2, 
+                        marker = marker1, 
+                        zorder = 4)
+        if vals2[i].size > 0:
+            for j in range(vals2[i].size):
+                ax.plot(x[i], vals2[i][j], 
+                        color = color2, 
+                        markersize = 1.5, 
+                        markerfacecolor = None, 
+                        marker = marker2, 
+                        zorder = 4)
+
 
 # --- Plots --------------------------------------------------------------------
 
 def initialize(color, font="Times New Roman", family="sans-serif", size=42):
     """
     Initialize matplotlib settings global parameters for text and background
+    
+    Args:
+        color (Color object): A color object with the color palette to use
+        font (str, optional): Font name to set for text
+        family (str, optional): Font family to use
+        size (int, optional): Font size to use
+
+    Raises: ValueError: If no correct color object is provided
     """
+    if not isinstance(color, Color):
+        raise ValueError("color must be an instance of Color object")
+    
     plt.rcParams["font.sans-serif"] = font
     plt.rcParams["font.family"] = family
     plt.rcParams["pdf.fonttype"] = size
     plt.rcParams["ps.fonttype"] = size
     plt.rcParams["axes.facecolor"] = color.palette["grey"]
+    plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["figure.autolayout"] = True
 
 def scatter(ax, color, dataset=None, subset=None, features=(0, 1), 
@@ -85,6 +139,8 @@ def scatter(ax, color, dataset=None, subset=None, features=(0, 1),
         dataset (sets.Dataset object, optional): The dataset to plot
         subset (sets.Subset object, optional): The subset to plot
         features (tuple, optional): The features to plot on x and y axes
+    
+    Raises: ValueError: If neither a dataset or subset are provided
     """
 
     if dataset is None and subset is None:
@@ -104,3 +160,41 @@ def scatter(ax, color, dataset=None, subset=None, features=(0, 1),
                         color = color.palette["darkGreen"], 
                         ax = ax,
                         **parameters)
+        
+def parallelCoordinates(ax, dataset, color, subset=None, dataLinewidth=0.5, 
+                        subsetLinewidth=1.5, **parameters):
+    """
+    Plot a parallel coordinates chart of dataset on ax
+
+    Args:
+        ax (matplotlib ax): The axis to plot the parallel coordinates on
+        dataset (pandas DataFrame): The dataset to plot
+        color (Color object): A color object with the color palette to use
+        subset (pandas DataFrame or None, optional): The subset to plot
+        dataLinewidth (float, optional): Linewidth for the main dataset
+        subsetLinewidth (float, optional): Linewidth for the subset
+        **parameters: Additional parameters to pass to 
+            pd.plotting.parallel_coordinates
+
+    Raises: ValueError: If neither a dataset or subset are provided
+    """
+    if dataset is None and subset is None:
+        raise ValueError("At least one of dataset or subset must be provided.")
+    
+    if dataset is not None:
+        pd.plotting.parallel_coordinates(dataset.data.assign(set="dataset"),
+                                         "set",
+                                         ax=ax,
+                                         color=color.palette["green"],
+                                         axvlines_kwds={'c': "white", "lw": 1},
+                                         linewidth=dataLinewidth,
+                                         **parameters)
+    if subset is not None:
+        pd.plotting.parallel_coordinates(subset.data.assign(set="subset"),
+                                         "set",
+                                         ax=ax,
+                                         color=color.palette["darkGreen"],
+                                         axvlines_kwds={'c': "white", "lw": 1},
+                                         linewidth=subsetLinewidth,
+                                         alpha=1,
+                                         **parameters)

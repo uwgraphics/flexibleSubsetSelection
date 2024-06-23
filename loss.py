@@ -9,6 +9,7 @@ import ot
 import numpy as np
 import pandas as pd
 
+from scipy.ndimage import convolve
 from scipy.spatial import ConvexHull
 from sklearn.neighbors import LocalOutlierFactor
 
@@ -147,6 +148,14 @@ def varianceMetric(array) -> np.array:
     """Returns the variance of each column feature of array."""
     return np.var(array, axis=0)
 
+def positiveVariance(array) -> np.array:
+    """Returns the positive variance of each column feature of array."""
+    return meanMetric(array) + varianceMetric(array)
+
+def negativeVariance(array) -> np.array:
+    """Returns the negative variance of each column feature of array."""
+    return meanMetric(array) - varianceMetric(array)
+
 def hullMetric(array) -> np.array:
     """Returns the convex hull area or volume of array."""
     hull = ConvexHull(array)
@@ -186,9 +195,9 @@ def preserveMetric(subset, metric, datasetMetric, p=1) -> float:
     # If the metric results are scalars, use the absolute difference
     if np.isscalar(datasetMetric):
         return np.abs(datasetMetric - subsetMetric)
-    
+
     # Otherwise, use np.linalg.norm for array-like metric results
-    return np.linalg.norm(datasetMetric - subsetMetric, ord=p)
+    return np.linalg.norm(datasetMetric - subsetMetric, ord=1)
 
 def distinctiveness(distances) -> float:
     """
@@ -234,3 +243,12 @@ def earthMoversDistance(subset, dataset) -> float:
         dataset (array): the full dataset
     """
     return ot.emd2([], [], ot.dist(subset, dataset))
+
+def pcpLineCrossings(array):
+    """returns the total number of line crosses"""
+    sum = 0
+    w = np.array([[1, 1]])
+    for i in range(array.shape[0]):
+        convolution = convolve(np.sign(array[i] - array[i+1:]), w)[:, :-1]
+        sum += np.ceil(np.sum(np.abs((np.abs(convolution)-2)/2)))
+    return sum
