@@ -23,7 +23,7 @@ class Solver():
         self.algorithm = algorithm
         self.loss = loss
 
-    def solve(self, dataset, solveArray="dataArray", **parameters):
+    def solve(self, dataset, **parameters):
         """
         Solve for optimal with algorithm and loss function for specified dataset
 
@@ -38,7 +38,6 @@ class Solver():
         else:
             return self.algorithm(dataset = dataset, 
                                   lossFunction = self.loss,
-                                  solveArray = solveArray, 
                                   **parameters)
     
     def createEnvironment(self, outputFlag=0):
@@ -105,7 +104,7 @@ def optimize(objective, constraints, environment, solver=cp.SCIP,
 
 # --- Algorithms ---------------------------------------------------------------
 
-def bestOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
+def bestOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
                maxIterations=None, seed=None, verbose=False, selectBy="row"):
     time0 = time.time()
 
@@ -128,7 +127,7 @@ def bestOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0,
     return z, timeTotal, minLoss
 
 
-def averageOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
+def averageOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
                maxIterations=None, seed=None, verbose=False, selectBy="row"):
     time0 = time.time()
 
@@ -150,7 +149,7 @@ def averageOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0,
     return z, timeTotal, avgLoss
 
 
-def worstOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
+def worstOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
                maxIterations=None, seed=None, verbose=False, selectBy="row"):
     """
     maximize representativeness of a subset of size s of dataset of size n by m
@@ -177,7 +176,7 @@ def worstOfRandom(dataset, lossFunction, subsetSize, solveArray, minLoss=0,
     return z, timeTotal, maxLoss
 
 
-def greedySwap(dataset, lossFunction, subsetSize, solveArray, minLoss=0, 
+def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, 
                maxIterations=None, seed=None, verbose=False, selectBy="row"):
     """
     A greedy algorithm with a greedy swap heuristic for subset selection.
@@ -200,7 +199,7 @@ def greedySwap(dataset, lossFunction, subsetSize, solveArray, minLoss=0,
     """
     if verbose:
         print(f"Solving for a subset of size {subsetSize} with "
-              f"{lossFunction.objective.__name__} objective on {solveArray}.")
+              f"{lossFunction.objective.__name__} objective.")
     time0 = time.time() # get start time
     iterations = 0
 
@@ -244,6 +243,223 @@ def greedySwap(dataset, lossFunction, subsetSize, solveArray, minLoss=0,
     timeTotal = time1 - time0 # calculate total time
 
     return z, timeTotal, loss # return indices, total time and loss
+
+def greedyMinSubset(dataset, lossFunction, epsilon, 
+                    minError=0, maxIterations=None, seed=None, 
+                    verbose=False, initialSize=1):
+    """
+    A greedy algorithm for subset selection to minimize the size of the subset 
+    such that lossFunction(subset) <= epsilon.
+
+    Args:
+        dataset (object): The Dataset class object
+        lossFunction (object): The loss function class object
+        epsilon (float): The target value for the function
+        solveArray (string): The desired array to use during solving
+        minError (float): The minimum error value to stop iterations
+        maxIterations (int, optional): Maximum number of iterations
+        seed (int, rng, optional): The random seed or NumPy rng for random 
+            generation and reproducibility
+        verbose (bool, optional): Toggle for verbose logging
+        initialSize (int, optional): Initial size of the subset
+
+    Returns:
+        z (array): Indicator vector of included items in the subset
+        timeTotal (float): Total execution time
+        error (float): The error value of the final subset
+    """
+    import time
+    import numpy as np
+
+    # Extract dataset size
+    datasetLength = dataset.size[0]
+
+    if verbose:
+        print(f"Solving for a subset such that {lossFunction.objective.__name__}(subset) <= {epsilon}")
+    time0 = time.time()  # get start time
+    iterations = 0
+    consecutive_stable_iterations = 0
+    prev_subset_size = initialSize
+
+    # Set the random seed
+    np.random.seed(seed)
+    
+    # Initialize the indicator vector z
+    z = np.zeros(datasetLength, dtype=int)
+    
+    # Randomly select initial points
+    selected_indices = np.random.choice(datasetLength, initialSize, replace=False)
+    z[selected_indices] = 1
+    
+    # Set of available indices
+    available_indices = set(range(datasetLength))
+    available_indices.difference_update(selected_indices)
+    
+    # Initial loss calculation
+    current_loss = lossFunction.calculate(dataset, z)
+    error = abs(current_loss - epsilon)
+
+    if maxIterations is None:
+        maxIterations = datasetLength
+
+    while iterations < maxIterations:
+        if verbose:
+            print(f"Iteration {iterations}: Loss {current_loss}, Error {error}, Subset Size {np.sum(z)}")
+        
+        # Check if error is less than or equal to epsilon
+        if error <= epsilon:
+            # Attempt to drop one or more points while keeping error below epsilon
+            dropped = False
+            new_selected_indices = []  # Create a list to store new selected indices
+            
+            for index in selected_indices:
+                if z[index] == 1:  # Ensure the index is currently selected
+                    z[index] = 0
+                    new_loss = lossFunction.calculate(dataset, z)
+                    new_error = abs(new_loss - epsilon)
+                    
+                    if new_error <= epsilon:
+                        current_loss = new_loss
+                        error = new_error
+                        available_indices.add(index)
+                        dropped = True
+                    else:
+                        z[index] = 1  # Revert the change
+                        new_selected_indices.append(index)  # Keep index in selected list
+                else:
+                    new_selected_indices.append(index)  # Keep index in selected list
+            
+            selected_indices = np.array(new_selected_indices)
+            
+            if dropped:
+                consecutive_stable_iterations = 0  # Reset consecutive stable iterations
+                prev_subset_size = np.sum(z)
+                continue  # Continue optimizing if dropped points successfully
+            else:
+                consecutive_stable_iterations += 1
+
+                # Check if subset size has not changed for a while
+                if consecutive_stable_iterations >= 5:
+                    break
+        
+        best_index = None
+        best_error = error
+
+        for index in available_indices:
+            z[index] = 1  # try adding this element
+            new_loss = lossFunction.calculate(dataset, z)
+            new_error = abs(new_loss - epsilon)
+            
+            if new_error < best_error:
+                best_error = new_error
+                best_index = index
+            
+            z[index] = 0  # revert the addition
+
+        if best_index is not None:
+            z[best_index] = 1
+            available_indices.remove(best_index)
+            current_loss = lossFunction.calculate(dataset, z)
+            error = abs(current_loss - epsilon)
+
+        iterations += 1
+
+    time1 = time.time()  # get end time
+    timeTotal = time1 - time0  # calculate total time
+
+    return z, timeTotal, error
+
+import numpy as np
+import time
+
+def greedyMixed(dataset, lossFunction, weight=1.0, 
+                            minError=0, maxIterations=None, seed=None, 
+                            verbose=False, initialSize=1):
+    """
+    A greedy algorithm to minimize the total loss = weight * subsetSize + lossFunction.calculate().
+
+    Args:
+        dataset (object): The Dataset class object
+        lossFunction (object): The loss function class object
+        weight (float): Weight parameter for the subset size
+        minError (float): The minimum error value to stop iterations
+        maxIterations (int, optional): Maximum number of iterations
+        seed (int, rng, optional): The random seed or NumPy rng for random 
+            generation and reproducibility
+        verbose (bool, optional): Toggle for verbose logging
+        initialSize (int, optional): Initial size of the subset
+
+    Returns:
+        z (array): Indicator vector of included items in the subset
+        timeTotal (float): Total execution time
+        total_loss (float): The total loss value of the final subset
+    """
+    # Extract dataset size
+    datasetLength = dataset.size[0]
+
+    if verbose:
+        print(f"Solving to minimize total loss = {weight} * subsetSize + lossFunction.calculate()")
+    time0 = time.time()  # get start time
+    iterations = 0
+
+    # Set the random seed
+    np.random.seed(seed)
+    
+    # Initialize the indicator vector z
+    z = np.zeros(datasetLength, dtype=int)
+    
+    # Randomly select initial points
+    selected_indices = np.random.choice(datasetLength, initialSize, replace=False)
+    z[selected_indices] = 1
+    
+    # Set of available indices
+    available_indices = set(range(datasetLength))
+    available_indices.difference_update(selected_indices)
+    
+    # Initial loss calculation
+    current_loss = lossFunction.calculate(dataset, z)
+    total_loss = weight * np.sum(z) + current_loss
+    error = abs(total_loss)
+
+    if maxIterations is None:
+        maxIterations = datasetLength
+
+    while iterations < maxIterations:
+        if verbose:
+            print(f"Iteration {iterations}: Total Loss {total_loss}, Subset Size {np.sum(z)}")
+        
+        # Check if error is less than or equal to minError
+        if error <= minError:
+            break
+
+        best_index = None
+        best_total_loss = total_loss
+
+        for index in available_indices:
+            z[index] = 1  # try adding this element
+            new_loss = lossFunction.calculate(dataset, z)
+            new_total_loss = weight * np.sum(z) + new_loss
+            
+
+            if new_total_loss < best_total_loss:
+                best_total_loss = new_total_loss
+                best_index = index
+            
+            z[index] = 0  # revert the addition
+
+        if best_index is not None:
+            z[best_index] = 1
+            available_indices.remove(best_index)
+            current_loss = lossFunction.calculate(dataset, z)
+            total_loss = weight * np.sum(z) + current_loss
+            error = abs(total_loss)  # update error
+        
+        iterations += 1
+
+    time1 = time.time()  # get end time
+    timeTotal = time1 - time0  # calculate total time
+
+    return z, timeTotal, total_loss  # return indicator vector, total time, and total loss
 
 
 def optimizeCoverage(dataset, environment, subsetSize, verbose=False):

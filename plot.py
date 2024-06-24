@@ -1,8 +1,9 @@
 # --- Imports ------------------------------------------------------------------
 
-# Standard libraries
+# Third party libraries
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -124,7 +125,7 @@ def initialize(color, font="Times New Roman", family="sans-serif", size=42):
     plt.rcParams["font.family"] = family
     plt.rcParams["pdf.fonttype"] = size
     plt.rcParams["ps.fonttype"] = size
-    plt.rcParams["axes.facecolor"] = color.palette["grey"]
+    plt.rcParams["axes.facecolor"] = "white"
     plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["figure.autolayout"] = True
 
@@ -198,3 +199,58 @@ def parallelCoordinates(ax, dataset, color, subset=None, dataLinewidth=0.5,
                                          linewidth=subsetLinewidth,
                                          alpha=1,
                                          **parameters)
+
+
+def histogram(ax, color, dataset=None, subset=None, numBins=6, **parameters):
+    """
+    Plot histograms of each feature of the dataset and subset side by side on ax
+
+    Args:
+        ax (matplotlib ax): The axis to plot the histogram on
+        color (Color object): A color object with the color palette to use
+        dataset (sets.Dataset object, optional): The dataset to plot
+        subset (sets.Subset object, optional): The subset to plot
+        numBins (float): The number of bins to bin the dataset
+    
+    Raises: ValueError: If neither a dataset or subset are provided
+    """
+    
+    if dataset is None and subset is None:
+        raise ValueError("no dataset or subset specified")
+    
+    features = dataset.data.columns
+    num_features = len(features)
+    
+    # Set width of each bin group
+    bar_width = 0.4
+    
+    # Get the positions of each bar group
+    bar_positions = np.arange(numBins * num_features, step=numBins)
+    
+    for i, feature in enumerate(features):
+        if dataset is not None:
+            # Plot the dataset histogram
+            dataset_hist = np.histogram(dataset.data[feature], bins=numBins)
+            dataset_heights = dataset_hist[0]
+            dataset_bins = dataset_hist[1]
+            bar_center = (dataset_bins[:-1] + dataset_bins[1:]) / 2
+            
+            # Adjust bar positions
+            positions = bar_positions[i] + np.arange(numBins)
+            
+            ax.bar(positions, dataset_heights, width=bar_width, 
+                   color=color.palette["green"], alpha=0.6, label=f'{feature} Dataset')
+        
+        if subset is not None:
+            # Normalize subset data
+            subset_data_normalized = subset.data[feature] * (len(dataset.data) / len(subset.data))
+            subset_hist = np.histogram(subset_data_normalized, bins=numBins)
+            subset_heights = subset_hist[0]
+            subset_bins = subset_hist[1]
+            bar_center = (subset_bins[:-1] + subset_bins[1:]) / 2
+            
+            # Adjust bar positions
+            positions = bar_positions[i] + np.arange(numBins) + bar_width
+            
+            ax.bar(positions, subset_heights, width=bar_width, 
+                   color=color.palette["darkGreen"], alpha=0.6, label=f'{feature} Subset')
