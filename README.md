@@ -70,8 +70,8 @@ The `generate.py` module provides functions for generating random datasets based
 #### Example Usage
 
 ```py
-skewDataset = fss.Dataset(randTypes="skew", size=(1000, 2), seed=123)
-variedDataset = fss.Dataset(randTypes=["skew", "normal", "multimodal"], size=(1000, 3), seed=123)
+skewDataset = fss.Dataset(randTypes="skew", size=(1000, 2))
+variedDataset = fss.Dataset(randTypes=["skew", "normal", "multimodal"], size=(1000, 3))
 ```
 
 ## Loss Functions and Metrics
@@ -88,8 +88,11 @@ The `MultiCriterion` class defines a multi-criterion loss function using a set o
 #### Example Usage
 
 ```py
-skewDataset = fss.Dataset(randTypes="skew", size=(1000, 2), seed=123)
-variedDataset = fss.Dataset(randTypes=["skew", "normal", "multimodal"], size=(1000, 3), seed=123)
+objectives = [fss.loss.earthMoversDistance, fss.loss.distinctiveness]
+parameters = [{"dataset": dataset.dataArray}, 
+              {"solveArray": "distances", "selectBy": "matrix"}]
+weights = np.array([1000, 0.1])
+solveMethod.loss = fss.loss.MultiCriterion(objectives, parameters, weights=weights)
 ```
 
 ### UniCriterion Class
@@ -103,8 +106,10 @@ The `UniCriterion` class defines a single-criterion loss function with an object
 #### Example Usage
 
 ```py
-dataset.preprocess(outlierness = fss.loss.outlierness)
-lossFunction = fss.UniCriterion(objective=np.sum, solveArray="outlierness")
+dataset.preprocess(distances = fss.loss.distanceMatrix)
+solveMethod.loss = fss.UniCriterion(objective = fss.loss.distinctiveness,
+                                    solveArray = "distances",
+                                    selectBy = "matrix")
 ```
 
 ## Solvers
