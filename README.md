@@ -6,7 +6,7 @@ Subset selection is crucial in data visualization for decluttering, summarizing,
 # Flexible Subset Selection Python Package
 
 ## Usage
-Installation is recommended to be done using  using `pip` and an environment manager. Dependencies can be installed from the `requirements.txt` file:
+Once downloaded, installation is recommended to be done using  using `pip` and an environment manager. Dependencies can be installed from the `requirements.txt` file:
 ```sh
 pip install -r requirements.txt
 ```
