@@ -5,8 +5,7 @@ import numpy as np
 import pandas as pd
 import pickle 
 
-from sklearn.preprocessing import KBinsDiscretizer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
 # Local imports
 import generate
@@ -14,7 +13,53 @@ import generate
 
 # --- Sets ---------------------------------------------------------------------
 
-class Dataset():
+class Base:
+    """
+    Base class of Dataset and Subset providing shared save and load functions
+    """
+    def save(self, name, fileType="pickle", directory="data", index=False):
+        """
+        Saves self.data as a file.
+
+        Args:
+            name (str): The name of the file.
+            fileType (str, optional): The type of file (pickle or csv).
+            directory (str, optional): Directory to save file in.
+            index (bool, optional): Whether to save the data index or not.
+        
+        Raises: ValueError if unsupported filetype is specified
+        """
+        if fileType == "pickle":
+            with open(f"{directory}/{name}.pkl", 'wb') as f:
+                pickle.dump(self.data, f)
+        elif fileType == "csv":
+            self.data.to_csv(f"{directory}/{name}.csv", index=index)
+        else:
+            raise ValueError(f"Unsupported file type: {fileType}")
+
+    def load(self, name, fileType="pickle", directory="data"):
+        """
+        Loads self.data from a file.
+
+        Args:
+            name (str): The name of the file.
+            fileType (str, optional): The type of file (pickle or csv).
+            directory (str, optional): Directory to load file from.
+        
+        Raises: ValueError if unsupported filetype is specified
+        """
+        if fileType == "pickle":
+            with open(f"{directory}/{name}.pkl", 'rb') as f:
+                self.data = pickle.load(f)
+        elif fileType == "csv":
+            self.data = pd.read_csv(f"{directory}/{name}.csv")
+        else:
+            raise ValueError(f"Unsupported file type: {fileType}")
+        
+class Dataset(Base):
+    """
+    A class for creating, storing, and processing of datasets for subsetting
+    """
     def __init__(self, data=None, randTypes=None, size=None, interval=(1, 5), 
                  features=None, seed=None):
         """
@@ -61,15 +106,15 @@ class Dataset():
             self.features = features
 
         self.dataArray = self.data.to_numpy() # numpy array for calculations
-        self.interval = interval
-        self.scale()
+        self.interval = interval              # interval of dataset
+        self.scale()                          # scale the data to interval 
         
     def preprocess(self, **parameters):
         """
         Perform preprocessing tasks.
 
         Args:
-            kwargs: Keyword arguments where the key is the name of the 
+            parameters: Keyword arguments where the key is the name of the 
                 preprocessing function and the value is the function itself.
         """
         for name, preprocessFunction in parameters.items():
@@ -89,7 +134,8 @@ class Dataset():
         """
         Bins self.dataArray numpy array into bins based on self.numBins.
 
-        Arg: numBins (int, array-like): The number of bins for data binning. 
+        Arg: 
+            numBins (int or array-like, optional): The number of bins to use
         """
         self.numBins = numBins
         est = KBinsDiscretizer(n_bins = self.numBins, 
@@ -105,14 +151,11 @@ class Dataset():
         encoder = OneHotEncoder()
         self.dataArray = encoder.fit_transform(self.dataArray).toarray()
 
-    def save(self, filename):
-        """
-        Saves self.data as a pickled file.
-        """
-        with open(f"data/{filename}Data.pkl", 'wb') as f:
-            pickle.dump(self.data, f)
 
-class Subset():
+class Subset(Base):
+    """
+    A class for creating, storing, and handling subsets of datasets
+    """
     def __init__(self, dataset, z):
         """
         Initialize a subset with a Dataset object and the indicator vector z.
@@ -125,11 +168,4 @@ class Subset():
 
         self.size = (np.sum(z), dataset.size[1])
         self.z = z
-        self.data = dataset.data[z == 1].copy()  # subset of the full data
-
-    def save(self, filename):
-        """
-        Saves self.data as a pickled file.
-        """
-        with open(f"data/{filename}Subset.pkl", 'wb') as f:
-            pickle.dump(self.data, f)
+        self.data = dataset.data[z == 1].copy() # subset of the full data
