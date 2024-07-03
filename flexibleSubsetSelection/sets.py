@@ -15,7 +15,7 @@ from . import generate
 
 class Base:
     """
-    Base class of Dataset and Subset providing shared save and load functions
+    Base class of Dataset and Subset providing shared save and load functions.
     """
     def save(self, name, fileType="pickle", directory="../data", index=False):
         """
@@ -111,7 +111,8 @@ class Dataset(Base):
         
     def preprocess(self, **parameters):
         """
-        Perform preprocessing tasks.
+        Perform custom preprocessing of preprocessFunction on self.dataArray and
+        assign it to the specified name.
 
         Args:
             parameters: Keyword arguments where the key is the name of the 
@@ -149,10 +150,8 @@ class Dataset(Base):
         """
         if strategy not in ['uniform', 'quantile', 'kmeans']:
             raise ValueError("unknown strategy specified")
-        
         if dimensions < 1:
             raise ValueError("unknown dimension specified")
-
         if features is None:
             features = self.features
 

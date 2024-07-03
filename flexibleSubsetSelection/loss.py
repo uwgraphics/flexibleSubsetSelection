@@ -10,6 +10,10 @@ import numpy as np
 # --- Loss Function ------------------------------------------------------------
 
 class MultiCriterion():
+    """
+    Create and apply multicriterion loss functions from a set of objectives and 
+    corresponding weights for subset selection.
+    """
     def __init__(self, objectives, parameters, weights=None):
         """
         Define a multi-criterion loss function with a set of objectives, 
@@ -66,6 +70,10 @@ class MultiCriterion():
         return loss
     
 class UniCriterion():
+    """
+    Create and apply a unicriterion loss function from an objective, apply to a 
+    particular data array for subset selection.
+    """
     def __init__(self, objective, solveArray="dataArray", selectBy="row", 
                  **parameters):
         """

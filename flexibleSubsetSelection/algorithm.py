@@ -30,8 +30,7 @@ def randomSample(datasetSize, subsetSize, seed=None):
     z[indices] = 1
     return z, indices
 
-def optimize(objective, constraints, environment, solver=cp.SCIP, 
-             verbose=False):
+def optimize(objective, constraints, environment, solver, verbose=False):
     """
     Sets up a cvxpy problem with given objective and constraints and solves it 
     using the specified solver.
@@ -43,8 +42,7 @@ def optimize(objective, constraints, environment, solver=cp.SCIP,
         environment: Optional. Environment or settings required by the solver, 
             particularly when using external solvers like Gurobi.
         solver: Optional. Solver to be used for solving the optimization 
-            problem. Defaults to cp.GUROBI. Other possible solvers include 
-            cp.ECOS, cp.OSQP, etc.
+            problem.
         verbose: Optional. Boolean flag indicating whether to print solver 
             output messages during optimization. Defaults to False.
 

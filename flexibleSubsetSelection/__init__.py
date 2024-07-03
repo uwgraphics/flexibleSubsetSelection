@@ -1,3 +1,10 @@
+"""
+A Python package for flexible subset selection via multi-criterion objective 
+optimization. This package allows subsets to be selected from datasets according
+to loss functions formed by selecting, blending, and tuning objectives using 
+general optimization solving methods such as greedy algorithms or MILP solvers.
+"""
+
 # Import top level classes
 from .sets import Dataset, Subset              # Data management classes
 from .loss import UniCriterion, MultiCriterion # Loss function classes

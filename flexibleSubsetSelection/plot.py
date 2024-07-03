@@ -11,6 +11,9 @@ import seaborn as sns
 # --- Color --------------------------------------------------------------------
 
 class Color:
+    """
+    Create and store color palettes and color bars for use in visualizations
+    """
     def __init__(self, palette=None):
         if palette is None:
             self.palette = {
