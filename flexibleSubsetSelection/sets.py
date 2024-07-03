@@ -130,20 +130,58 @@ class Dataset(Base):
         self.dataArray = self.dataArray * (self.interval[1] - self.interval[0])
         self.dataArray += self.interval[0]
         
-    def bin(self, numBins=6):
+    def discretize(self, bins, dimensions=1, features=None, strategy='uniform'):
         """
-        Bins self.dataArray numpy array into bins based on self.numBins.
+        Discretize self.dataArray into bins.
 
         Arg: 
-            numBins (int or array-like, optional): The number of bins to use
-        """
-        self.numBins = numBins
-        est = KBinsDiscretizer(n_bins = self.numBins, 
-                               encode = 'ordinal', 
-                               strategy = 'uniform')
-        self.dataArray = est.fit_transform(self.dataArray)
+            bins (int or array-like): Number of bins to use, bins in each 
+                feature, or bin edges.
+            dimensions (int, optional): Dimensionality of bins. 1 dimension bins 
+                each feature separately. >1 uses bins in >=2D space
+            features (List, optional): The features to use for the binning
+            strategy (String, optional): sklearn KBinsDiscretizer strategy to 
+                use from 'uniform', 'quantile', or 'kmeans'.
         
-    def oneHotEncode(self):
+        Raises:
+            ValueError: if unknown strategy or dimensions given or features do 
+                not match necessary dimensionality
+        """
+        if strategy not in ['uniform', 'quantile', 'kmeans']:
+            raise ValueError("unknown strategy specified")
+        
+        if dimensions < 1:
+            raise ValueError("unknown dimension specified")
+
+        if features is None:
+            features = self.features
+
+        # Get indices of the specified features
+        indices = [self.features.index(feature) for feature in features]
+        selected = self.dataArray[:, indices]
+        discretizer = KBinsDiscretizer(n_bins = bins, 
+                                       encode = 'ordinal', 
+                                       strategy = strategy)
+
+        if dimensions == 1:
+            self.dataArray[:, indices] = discretizer.fit_transform(selected)
+        else:
+            numFeatures = len(features)
+            if dimensions > numFeatures:
+                raise ValueError(f"Cannot bin {features} in {dimensions}D")
+            
+            newData = []
+            for i in range(0, numFeatures, dimensions):
+                subset = selected[:, i:i+dimensions]
+                binnedSubset = discretizer.fit_transform(subset)
+                newData.append(binnedSubset)
+
+            binnedData = np.hstack(newData)
+            self.dataArray[:, indices] = binnedData
+
+        self.bins = bins
+        
+    def encode(self):
         """
         One hot encodes self.dataArray numpy array. Assumes continuous variables
         have been binned if necessary.
