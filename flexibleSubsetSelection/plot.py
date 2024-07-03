@@ -203,7 +203,8 @@ def parallelCoordinates(ax, dataset, color, subset=None, dataLinewidth=0.5,
 
 def histogram(ax, color, dataset=None, subset=None, numBins=6, **parameters):
     """
-    Plot histograms of each feature of the dataset and subset side by side on ax
+    Plot histograms of each feature side by side on ax with normalized subset 
+    and dataset overlapping on common bins
 
     Args:
         ax (matplotlib ax): The axis to plot the histogram on
@@ -216,41 +217,42 @@ def histogram(ax, color, dataset=None, subset=None, numBins=6, **parameters):
     """
     
     if dataset is None and subset is None:
-        raise ValueError("no dataset or subset specified")
+        raise ValueError("No dataset or subset specified")
     
-    features = dataset.data.columns
-    num_features = len(features)
-    
-    # Set width of each bin group
-    bar_width = 0.4
-    
-    # Get the positions of each bar group
-    bar_positions = np.arange(numBins * num_features, step=numBins)
-    
-    for i, feature in enumerate(features):
-        if dataset is not None:
+    # Check if dataset is provided
+    if dataset is not None:
+        features = dataset.data.columns
+        num_features = len(features)
+        
+        # Get the positions of each bar group
+        bar_positions = np.arange(numBins * num_features, step=numBins)
+        
+        for i, feature in enumerate(features):
             # Plot the dataset histogram
             dataset_hist = np.histogram(dataset.data[feature], bins=numBins)
             dataset_heights = dataset_hist[0]
-            dataset_bins = dataset_hist[1]
-            bar_center = (dataset_bins[:-1] + dataset_bins[1:]) / 2
             
             # Adjust bar positions
             positions = bar_positions[i] + np.arange(numBins)
             
-            ax.bar(positions, dataset_heights, width=bar_width, 
-                   color=color.palette["green"], alpha=0.6, label=f'{feature} Dataset')
+            ax.bar(positions, dataset_heights, width=1, 
+                   color=color.palette["green"], alpha=0.5)
+    
+    # Check if subset is provided
+    if subset is not None:
+        features = subset.data.columns
+        num_features = len(features)
         
-        if subset is not None:
-            # Normalize subset data
-            subset_data_normalized = subset.data[feature] * (len(dataset.data) / len(subset.data))
-            subset_hist = np.histogram(subset_data_normalized, bins=numBins)
-            subset_heights = subset_hist[0]
-            subset_bins = subset_hist[1]
-            bar_center = (subset_bins[:-1] + subset_bins[1:]) / 2
+        # Get the positions of each bar group
+        bar_positions = np.arange(numBins * num_features, step=numBins)
+        
+        for i, feature in enumerate(features):
+            # Calculate histogram of subset normalized by subset size
+            subset_hist = np.histogram(subset.data[feature], bins=numBins)
+            subset_heights = subset_hist[0] / len(subset.data) * len(dataset.data)
             
             # Adjust bar positions
-            positions = bar_positions[i] + np.arange(numBins) + bar_width
+            positions = bar_positions[i] + np.arange(numBins)
             
-            ax.bar(positions, subset_heights, width=bar_width, 
-                   color=color.palette["darkGreen"], alpha=0.6, label=f'{feature} Subset')
+            ax.bar(positions, subset_heights, width=1, 
+                   color=color.palette["darkGreen"], alpha=0.5)  # Increase alpha for better visibility

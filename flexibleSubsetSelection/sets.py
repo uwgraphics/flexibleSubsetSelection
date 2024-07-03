@@ -8,7 +8,7 @@ import pickle
 from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
 # Local imports
-import generate
+from . import generate
 
 
 # --- Sets ---------------------------------------------------------------------
