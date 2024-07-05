@@ -1,5 +1,8 @@
 # --- Imports ------------------------------------------------------------------
 
+# Standard libraries
+import os
+
 # Third party libraries
 import numpy as np
 import pandas as pd
@@ -15,8 +18,9 @@ from . import generate
 
 class Base:
     """
-    Base class of Dataset and Subset providing shared save and load functions.
+    Base class for Dataset and Subset providing shared save and load functions.
     """
+    
     def save(self, name, fileType="pickle", directory="../data", index=False):
         """
         Saves self.data as a file.
@@ -24,42 +28,50 @@ class Base:
         Args:
             name (str): The name of the file.
             fileType (str, optional): The type of file (pickle or csv).
-            directory (str, optional): Directory to save file in.
+            directory (str, optional): Directory to save the file in.
             index (bool, optional): Whether to save the data index or not.
         
-        Raises: ValueError if unsupported filetype is specified
+        Raises:
+            ValueError: If an unsupported file type is specified.
         """
+        file_path = os.path.join(directory, f"{name}.{fileType}")
+        
         if fileType == "pickle":
-            with open(f"{directory}/{name}.pkl", 'wb') as f:
+            with open(file_path, 'wb') as f:
                 pickle.dump(self.data, f)
         elif fileType == "csv":
-            self.data.to_csv(f"{directory}/{name}.csv", index=index)
+            self.data.to_csv(file_path, index=index)
         else:
-            raise ValueError(f"Unsupported file type: {fileType}")
+            raise ValueError(f"Unsupported file type: {fileType}.")
 
-    def load(self, name, fileType="pickle", directory="data"):
+    def load(self, name, fileType="pickle", directory="../data"):
         """
         Loads self.data from a file.
 
         Args:
             name (str): The name of the file.
             fileType (str, optional): The type of file (pickle or csv).
-            directory (str, optional): Directory to load file from.
+            directory (str, optional): Directory to load the file from.
         
-        Raises: ValueError if unsupported filetype is specified
+        Raises:
+            ValueError: If an unsupported file type is specified.
         """
+        file_path = os.path.join(directory, f"{name}.{fileType}")
+        
         if fileType == "pickle":
-            with open(f"{directory}/{name}.pkl", 'rb') as f:
+            with open(file_path, 'rb') as f:
                 self.data = pickle.load(f)
         elif fileType == "csv":
-            self.data = pd.read_csv(f"{directory}/{name}.csv")
+            self.data = pd.read_csv(file_path)
         else:
-            raise ValueError(f"Unsupported file type: {fileType}")
-        
+            raise ValueError(f"Unsupported file type: {fileType}.")
+
+
 class Dataset(Base):
     """
     A class for creating, storing, and processing of datasets for subsetting
     """
+
     def __init__(self, data=None, randTypes=None, size=None, interval=(1, 5), 
                  features=None, seed=None):
         """
@@ -77,13 +89,16 @@ class Dataset(Base):
             seed (int, rng, optional): The random seed or Numpy rng for random 
                 generation and reproducibility. 
 
-        Raises: ValueError: If no data or random generation method is specified.
+        Raises:
+            ValueError: If no data or random generation method is specified.
         """
-
         # Initialize data
-        if data is not None: # initialize with data
+        if data is not None:  # initialize with data
             self.size = data.shape
-            self.data = data
+            if isinstance(data, pd.DataFrame):
+                self.data = data 
+            else:
+                pd.DataFrame(data)
         elif randTypes is not None:  # initialize with random data generation
             if isinstance(randTypes, list):
                 self.data = pd.DataFrame({
@@ -94,21 +109,18 @@ class Dataset(Base):
                 self.data = generate.randomData(randTypes, size, interval, seed)
             self.size = size
         else:
-            raise ValueError("no data or random generation method specified")
-        
+            raise ValueError("No data or random generation method specified.")
+
         # Initialize features
         if features is None:
-            if isinstance(self.data, pd.DataFrame):
-                self.features = tuple(self.data.columns)
-            else:
-                self.features = tuple(range(self.data.shape[1]))
+            self.features = tuple(self.data.columns)
         else:
             self.features = features
 
-        self.dataArray = self.data.to_numpy() # numpy array for calculations
-        self.interval = interval              # interval of dataset
-        self.scale()                          # scale the data to interval 
-        
+        self.dataArray = self.data[self.features].to_numpy()
+        self.interval = interval
+        self.scale()
+
     def preprocess(self, **parameters):
         """
         Perform custom preprocessing of preprocessFunction on self.dataArray and
@@ -125,9 +137,9 @@ class Dataset(Base):
         """
         Scales self.dataArray numpy array based on self.interval tuple
         """
-        min = self.dataArray.min(axis=0)
-        max = self.dataArray.max(axis=0)
-        self.dataArray = (self.dataArray - min) / (max - min)
+        minVals = self.dataArray.min(axis=0)
+        maxVals = self.dataArray.max(axis=0)
+        self.dataArray = (self.dataArray - minVals) / (maxVals - minVals)
         self.dataArray = self.dataArray * (self.interval[1] - self.interval[0])
         self.dataArray += self.interval[0]
         
@@ -191,18 +203,36 @@ class Dataset(Base):
 
 class Subset(Base):
     """
-    A class for creating, storing, and handling subsets of datasets
+    A class for creating, storing, and handling subsets of datasets.
     """
+
     def __init__(self, dataset, z):
         """
         Initialize a subset with a Dataset object and the indicator vector z.
 
         Args:
-            dataset (Dataset): The Dataset object from which the subset is taken
+            dataset (Dataset): The dataset from which to take the subset.
             z (array-like): The indicator vector indicating which samples from 
                 the dataset are included in the subset.
-        """
 
-        self.size = (np.sum(z), dataset.size[1])
+        Raises:
+            ValueError: If length of z does not match the length of dataset.
+            TypeError: If dataset is not an instance of Dataset.
+        """
+        if not isinstance(dataset, Dataset):
+            raise TypeError("Dataset must be an instance of Dataset class.")
+        
+        if len(z) != dataset.data.shape[0]:
+            raise ValueError("Length of z must match the length of dataset.")
+
+        if dataset.data.ndim == 1:  # one-dimensional dataset
+            self.size = (np.sum(z),)
+        else:
+            self.size = (np.sum(z), dataset.size[1])
+        
+        self.data = dataset.data[z == 1].copy()  # subset of the full data
         self.z = z
-        self.data = dataset.data[z == 1].copy() # subset of the full data
+
+    def __repr__(self):
+        """Return a string representation of the Subset object."""
+        return f"Subset(size={self.size})"

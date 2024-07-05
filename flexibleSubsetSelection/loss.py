@@ -111,7 +111,7 @@ class UniCriterion():
 
 def select(array, z, selectBy) -> np.array:
     """
-    Selects a subset from  array according to indicator z
+    Selects a subset from array according to indicator z
 
     Args:
         array: to select from
@@ -125,4 +125,4 @@ def select(array, z, selectBy) -> np.array:
     elif selectBy == "matrix":
         return array[z == 1][:, z == 1]
     else:
-        raise ValueError("unknown selection method specified")      
+        raise ValueError("Unknown selection method specified.")

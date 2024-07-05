@@ -458,21 +458,16 @@ def optimizeCoverage(dataset, environment, subsetSize, verbose=False):
     return z.value.astype(int), timeTotal, problem.value
 
 
-def optimizeSum(dataset, environment, subsetSize, w, verbose=False):
+def optimizeSum(dataset, environment, w, solver, verbose=False):
 
     time_0 = time.time()
 
     datasetLength = len(dataset.dataArray)
     z = cp.Variable(datasetLength, boolean=True) # subset decision vector
-
-    # L1 norm linearization constraints and s constraint
     constraints = []
 
-    objective = cp.Minimize(w[0]*cp.sum(z) - w[1]*cp.sum(z@dataset.dataArray))
-    problem = optimize(objective=objective, 
-                       constraints=constraints, 
-                       environment=environment, 
-                       verbose=verbose)
+    objective = cp.Maximize(-w[0]*cp.sum(z) + w[1]*cp.sum(z@dataset.dataArray))
+    problem = optimize(objective, constraints, environment, solver, verbose)
 
     time_1 = time.time()
     timeTotal = time_1 - time_0

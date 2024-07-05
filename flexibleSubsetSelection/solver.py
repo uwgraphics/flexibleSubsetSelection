@@ -16,7 +16,7 @@ class Solver():
         optionally, a loss function.
 
         Args:
-            algorithm (function): The solve algorithm.
+            algorithm (function): The algorithm function to find the subset.
             loss (Loss object, optional): The loss function class object.
         """
         self.algorithm = algorithm
