@@ -25,7 +25,9 @@ class Color:
                 "grey": "#eff0f2"
             }
         else:
-            self.palette = palette         
+            self.palette = palette
+    def __getitem__(self, colorName):
+        return self.palette[colorName]   
 
 
 # --- Figures ------------------------------------------------------------------
