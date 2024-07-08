@@ -113,7 +113,7 @@ class Dataset(Base):
 
         # Initialize features
         if features is None:
-            self.features = tuple(self.data.columns)
+            self.features = list(self.data.columns)
         else:
             self.features = features
 
