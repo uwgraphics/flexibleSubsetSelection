@@ -128,7 +128,7 @@ def initialize(color, font="Times New Roman", family="sans-serif", size=42):
     plt.rcParams["font.family"] = family
     plt.rcParams["pdf.fonttype"] = size
     plt.rcParams["ps.fonttype"] = size
-    plt.rcParams["axes.facecolor"] = "white"
+    plt.rcParams["axes.facecolor"] = color.palette["grey"]
     plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["figure.autolayout"] = True
 

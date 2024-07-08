@@ -3,8 +3,9 @@
 # Third party libraries
 import numpy as np
 import pandas as pd
-from scipy.spatial import ConvexHull
 
+from scipy.spatial import ConvexHull
+from sklearn.cluster import KMeans
 
 # --- Metric Functions ---------------------------------------------------------
 
@@ -54,3 +55,18 @@ def discreteDistribution(array) -> float:
     Returns the discrete distribution of the one hot encoded array
     """
     return np.mean(array, axis=0)
+
+def clusterCenters(array: np.ndarray, k: int) -> np.ndarray:
+    """
+    Returns the cluster centers of the k-means clustering for k clusters of the 
+    data in array.
+
+    Args:
+        array (np.ndarray): Array of datapoints in the set.
+        k (int): Number of clusters.
+
+    Returns:
+        np.ndarray: Array of cluster centers.
+    """
+    kmeans = KMeans(n_clusters=k, random_state=0).fit(array)
+    return kmeans.cluster_centers_

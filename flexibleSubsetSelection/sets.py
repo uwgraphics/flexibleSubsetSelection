@@ -128,11 +128,19 @@ class Dataset(Base):
 
         Args:
             parameters: Keyword arguments where the key is the name of the 
-                preprocessing function and the value is the function itself.
+                preprocessing function and the value is either:
+                - The function itself (for functions that don't require parameters)
+                - A tuple where the first element is the function and the second 
+                  element is a dictionary of additional parameters.
         """
-        for name, preprocessFunction in parameters.items():
-            setattr(self, name, preprocessFunction(self.dataArray))
-    
+        for name, preprocessTuple in parameters.items():
+            if isinstance(preprocessTuple, tuple):
+                preprocessFunc, funcParams = preprocessTuple
+                setattr(self, name, preprocessFunc(self.dataArray, **funcParams))
+            else:
+                preprocessFunc = preprocessTuple
+                setattr(self, name, preprocessFunc(self.dataArray))
+
     def scale(self):
         """
         Scales self.dataArray numpy array based on self.interval tuple

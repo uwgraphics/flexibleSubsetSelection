@@ -75,7 +75,7 @@ def earthMoversDistance(subset, dataset) -> float:
     """
     return ot.emd2([], [], ot.dist(subset, dataset))
 
-def pcpLineCrossings(array):
+def pcpLineCrossings(array) -> int:
     """returns the total number of line crosses"""
     sum = 0
     w = np.array([[1, 1]])
@@ -83,3 +83,29 @@ def pcpLineCrossings(array):
         convolution = convolve(np.sign(array[i] - array[i+1:]), w)[:, :-1]
         sum += np.ceil(np.sum(np.abs((np.abs(convolution)-2)/2)))
     return sum
+
+def spread(array) -> float:
+    return np.sum(np.abs(array[:, np.newaxis, :] - array[np.newaxis, :, :]))
+
+def clusterCenters(array: np.ndarray, clusterCenters: np.ndarray) -> float:
+    """
+    An objective function for minimizing the distance to the nearest point for 
+    each cluster center.
+
+    Args:
+        array (np.ndarray): Array of datapoints in the set.
+        clusterCenters (np.ndarray): Array of cluster centers.
+
+    Returns: The sum of distances to the nearest point for each cluster center.
+    """
+    # Calculate pairwise distance between data points and cluster centers
+    distances = np.linalg.norm(
+        array[:, np.newaxis, :] - clusterCenters[np.newaxis, :, :], 
+        axis=2
+    )
+    
+    # Find the minimum distance to a data point for each cluster center
+    minDistances = np.min(distances, axis=0)
+    
+    # Return the sum of these minimum distances
+    return np.sum(minDistances)
