@@ -84,8 +84,12 @@ def pcpLineCrossings(array) -> int:
         sum += np.ceil(np.sum(np.abs((np.abs(convolution)-2)/2)))
     return sum
 
-def spread(array) -> float:
-    return np.sum(np.abs(array[:, np.newaxis, :] - array[np.newaxis, :, :]))
+def spread(distances) -> float:
+    """
+    Computes the total distance between all points in distances matrix
+    """
+    np.fill_diagonal(distances, 0)
+    return -np.sum(distances)
 
 def clusterCenters(array: np.ndarray, clusterCenters: np.ndarray) -> float:
     """
@@ -103,7 +107,7 @@ def clusterCenters(array: np.ndarray, clusterCenters: np.ndarray) -> float:
         array[:, np.newaxis, :] - clusterCenters[np.newaxis, :, :], 
         axis=2
     )
-    
+
     # Find the minimum distance to a data point for each cluster center
     minDistances = np.min(distances, axis=0)
     

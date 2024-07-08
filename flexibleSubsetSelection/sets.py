@@ -78,7 +78,7 @@ class Dataset(Base):
         Initialize a dataset with data or by random data generation.
 
         Args:
-            data (array-like, optional): The DataFrame or ndarray of the data.            
+            data (array-like, optional): The DataFrame or ndarray of the data. 
             randTypes (str or list, optional): The method or methods for random 
                 data generation. Supported methods: "uniform", "binary", 
                 "categorical", "normal", "multimodal", "skew", "blobs"
@@ -119,7 +119,6 @@ class Dataset(Base):
 
         self.dataArray = self.data[self.features].to_numpy()
         self.interval = interval
-        self.scale()
 
     def preprocess(self, **parameters):
         """
@@ -128,28 +127,31 @@ class Dataset(Base):
 
         Args:
             parameters: Keyword arguments where the key is the name of the 
-                preprocessing function and the value is either:
-                - The function itself (for functions that don't require parameters)
-                - A tuple where the first element is the function and the second 
-                  element is a dictionary of additional parameters.
+                preprocessing function and the value is either the function (for
+                functions that don't require parameters), or a tuple where the 
+                first element is the function and the second element is a 
+                dictionary of additional parameters.
         """
         for name, preprocessTuple in parameters.items():
             if isinstance(preprocessTuple, tuple):
-                preprocessFunc, funcParams = preprocessTuple
-                setattr(self, name, preprocessFunc(self.dataArray, **funcParams))
+                function, funcParams = preprocessTuple
+                setattr(self, name, function(self.dataArray, **funcParams))
             else:
                 preprocessFunc = preprocessTuple
                 setattr(self, name, preprocessFunc(self.dataArray))
 
-    def scale(self):
+    def scale(self, interval=None):
         """
         Scales self.dataArray numpy array based on self.interval tuple
         """
+        if interval is None:
+            interval = self.interval
+
         minVals = self.dataArray.min(axis=0)
         maxVals = self.dataArray.max(axis=0)
         self.dataArray = (self.dataArray - minVals) / (maxVals - minVals)
-        self.dataArray = self.dataArray * (self.interval[1] - self.interval[0])
-        self.dataArray += self.interval[0]
+        self.dataArray = self.dataArray * (interval[1] - interval[0])
+        self.dataArray += interval[0]
         
     def discretize(self, bins, dimensions=1, features=None, strategy='uniform'):
         """
@@ -158,7 +160,7 @@ class Dataset(Base):
         Arg: 
             bins (int or array-like): Number of bins to use, bins in each 
                 feature, or bin edges.
-            dimensions (int, optional): Dimensionality of bins. 1 dimension bins 
+            dimensions (int, optional): Dimensionality of bins. 1 dimension bins
                 each feature separately. >1 uses bins in >=2D space
             features (List, optional): The features to use for the binning
             strategy (String, optional): sklearn KBinsDiscretizer strategy to 

@@ -68,5 +68,5 @@ def clusterCenters(array: np.ndarray, k: int) -> np.ndarray:
     Returns:
         np.ndarray: Array of cluster centers.
     """
-    kmeans = KMeans(n_clusters=k, random_state=0).fit(array)
+    kmeans = KMeans(n_clusters=k).fit(array)
     return kmeans.cluster_centers_

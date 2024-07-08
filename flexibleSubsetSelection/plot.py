@@ -94,14 +94,14 @@ def errorMarkers(ax, x, vals1, color1, marker1, vals2=None, color2=None,
             for j in range(vals1[i].size):
                 ax.plot(x[i], vals1[i][j], 
                         color = color1, 
-                        markersize = 2, 
+                        markersize = 4, 
                         marker = marker1, 
                         zorder = 4)
         if vals2[i].size > 0:
             for j in range(vals2[i].size):
                 ax.plot(x[i], vals2[i][j], 
                         color = color2, 
-                        markersize = 1.5, 
+                        markersize = 3.5, 
                         markerfacecolor = None, 
                         marker = marker2, 
                         zorder = 4)
@@ -163,6 +163,7 @@ def scatter(ax, color, dataset=None, subset=None, features=(0, 1),
                         y = features[1], 
                         color = color.palette["darkGreen"], 
                         ax = ax,
+                        zorder=4,
                         **parameters)
         
 def parallelCoordinates(ax, dataset, color, subset=None, dataLinewidth=0.5, 
