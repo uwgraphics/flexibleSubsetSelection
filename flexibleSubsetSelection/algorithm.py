@@ -3,22 +3,22 @@
 # Standard library
 import time
 
-# Third party libraries
+# Third party
 import cvxpy as cp
 import numpy as np
 
 
 # --- Utility ------------------------------------------------------------------
 
-def randomSample(datasetSize, subsetSize, seed=None):
+def randomSample(datasetSize: tuple, subsetSize: int, 
+                 seed: int | np.random.Generator = None):
     """
     Randomly sample from dataset by generating random indices to create subset
 
     Args:
-        datasetSize (tuple): The dataset dimensions sizes
-        subsetSize (int): The number of points to sample for the subset
-        seed (int, rng, optional): The random seed or Numpy rng for random 
-            generation and reproducibility
+        datasetSize: The dataset dimensions sizes
+        subsetSize: The number of points to sample for the subset
+        seed: The random seed or generator for reproducibility. 
     
     Returns:
         z (array): indicator vector of included items in the subset

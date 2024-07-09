@@ -1,13 +1,16 @@
-# --- Escapes ------------------------------------------------------------------
-# handles system and terminal specific commands for dealing with blocking,
-# echoing, and canonical modes, returning focus, and modifying color, cursor
-# and keys for terminal input and output
-
+"""
+Handles system and terminal specific commands for dealing with blocking, 
+echoing, and canonical modes, returning focus, and modifying color, cursor and 
+keys for terminal input and output.
+"""
 
 # --- Imports ------------------------------------------------------------------
 
-# Standard libraries
-import sys, tty, os, termios, fcntl
+# Standard library
+import sys
+import os
+import termios
+import fcntl
 
 
 # --- Blocking -----------------------------------------------------------------

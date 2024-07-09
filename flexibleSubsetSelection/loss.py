@@ -2,10 +2,14 @@
 
 # Standard library
 from functools import partial
+from typing import Callable
 
-# Third party libraries
+# Third party
 import numpy as np
+from numpy.typing import ArrayLike
 
+# Local
+from . import sets
 
 # --- Loss Function ------------------------------------------------------------
 
@@ -14,15 +18,16 @@ class MultiCriterion():
     Create and apply multicriterion loss functions from a set of objectives and 
     corresponding weights for subset selection.
     """
-    def __init__(self, objectives, parameters, weights=None):
+    def __init__(self, objectives: ArrayLike, parameters: ArrayLike, 
+                 weights: ArrayLike = None) -> None:
         """
         Define a multi-criterion loss function with a set of objectives, 
         weights, and parameters
 
         Args:
-            objectives (array): The objective functions to define the loss
-            parameters (list of dict): The parameters for each objective
-            weights (array, optional): The weights to assign to each objective
+            objectives: The objective functions to define the loss
+            parameters: The set of dictionaries of parameters for each objective
+            weights: The weights to assign to each objective
 
         Raises:
             ValueError: If weights or parameters has incorrect length.
@@ -43,18 +48,19 @@ class MultiCriterion():
         # Generate the combined objective function
         self.calculate = partial(self._loss)
 
-    def _loss(self, dataset, z) -> float:
+    def _loss(self, dataset: sets.Dataset, z: ArrayLike) -> float:
         """
         Compute the overall loss function by evaluating each objective function
         with its corresponding parameters and combining them with weights.
 
         Args:
-            dataset (object): The dataset object containing the arrays.
-            z (array): The subset indices or other selector.
-
+            dataset: The dataset object containing the data.
+            z: The indicator vector indicating which samples from the dataset 
+                are included in the subset.
         Returns:
             float: The computed value of the overall loss function.
         """
+        print(dataset)
         loss = 0.0
         zipped = zip(self.objectives, self.parameters, self.weights)
         for objective, params, weight in zipped:
@@ -74,18 +80,17 @@ class UniCriterion():
     Create and apply a unicriterion loss function from an objective, apply to a 
     particular data array for subset selection.
     """
-    def __init__(self, objective, solveArray="dataArray", selectBy="row", 
-                 **parameters):
+    def __init__(self, objective: Callable, solveArray: str = "dataArray", 
+                 selectBy: str = "row", **parameters):
         """
         Define a loss function with an objective and optional parameters for 
         subset selection.
 
         Args:
-            objective (function): The objective function to define the loss.
-            solveArray (str, optional): The name of the array in dataset to use 
+            objective: The objective function to define the loss.
+            solveArray: The name of the array in dataset to use 
                 for subset selection. Default is "dataArray".
-            selectBy (str, optional): The method to select subset from array. 
-                Default is "row".
+            selectBy: The method to select subset from array. 
             **parameters: Additional parameters of the objective function.
         """
         self.objective = objective
@@ -93,14 +98,15 @@ class UniCriterion():
         self.selectBy = selectBy
         self.parameters = parameters
 
-    def calculate(self, dataset, z) -> float:
+    def calculate(self, dataset: sets.Dataset, z: ArrayLike) -> float:
         """
         Compute the loss by evaluating the objective with its parameters on the 
         selected subset.
 
         Args:
-            dataset (object): The dataset object containing the arrays.
-            z (array): The subset indices or other selector.
+            dataset: The dataset object containing the data.
+            z: The indicator vector indicating which samples from the dataset 
+                are included in the subset.
 
         Returns:
             float: The computed value of the loss function.
@@ -109,7 +115,7 @@ class UniCriterion():
         subset = select(array, z, selectBy=self.selectBy)
         return self.objective(subset, **self.parameters)
 
-def select(array, z, selectBy) -> np.array:
+def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
     """
     Selects a subset from array according to indicator z
 

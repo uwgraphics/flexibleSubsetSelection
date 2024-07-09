@@ -1,6 +1,6 @@
 # --- Imports ------------------------------------------------------------------
 
-# Third party libraries
+# Third party
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +14,7 @@ class Color:
     """
     Create and store color palettes and color bars for use in visualizations
     """
-    def __init__(self, palette=None):
+    def __init__(self, palette: dict = None):
         if palette is None:
             self.palette = {
                 "green": "#8dd3c7",

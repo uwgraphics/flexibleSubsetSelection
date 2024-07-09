@@ -1,48 +1,49 @@
 # --- Imports ------------------------------------------------------------------
 
-# Third party libraries
+# Third party
 import numpy as np
 import pandas as pd
 
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
 
+
 # --- Metric Functions ---------------------------------------------------------
 
-def max(data, *_)-> np.array:
+def max(array: np.ndarray)-> np.ndarray:
     """Returns the maximum of each feature of array"""
-    return np.max(data, axis=0)
+    return np.max(array, axis=0)
 
-def min(data, *_) -> np.array:
+def min(array: np.ndarray) -> np.ndarray:
     """Returns the minimum of each feature of array"""
-    return np.min(data, axis=0)
+    return np.min(array, axis=0)
 
-def mean(array) -> np.array:
+def mean(array: np.ndarray) -> np.ndarray:
     """Returns the means of each column feature of array."""
     return np.mean(array, axis=0)
 
-def range(array) -> np.array:
+def range(array: np.ndarray) -> np.ndarray:
     """Returns the ranges of each column feature of array."""
     return np.ptp(array, axis=0)
 
-def variance(array) -> np.array:
+def variance(array: np.ndarray) -> np.ndarray:
     """Returns the variance of each column feature of array."""
     return np.var(array, axis=0)
 
-def positiveVariance(array) -> np.array:
+def positiveVariance(array: np.ndarray) -> np.ndarray:
     """Returns the positive variance of each column feature of array."""
     return mean(array) + variance(array)
 
-def negativeVariance(array) -> np.array:
+def negativeVariance(array: np.ndarray) -> np.ndarray:
     """Returns the negative variance of each column feature of array."""
     return mean(array) - variance(array)
 
-def hull(array) -> np.array:
+def hull(array: np.ndarray) -> np.ndarray:
     """Returns the convex hull area or volume of array."""
     hull = ConvexHull(array)
     return hull.volume if array.shape[1] > 2 else hull.area
 
-def distanceMatrix(array) -> np.array:
+def distanceMatrix(array: np.ndarray) -> np.ndarray:
     """Returns the distance matrix of an array or DataFrame."""
     if isinstance(array, pd.DataFrame):
         array = array.values
@@ -50,7 +51,7 @@ def distanceMatrix(array) -> np.array:
     np.fill_diagonal(distances, np.inf)
     return distances
 
-def discreteDistribution(array) -> float:
+def discreteDistribution(array: np.ndarray) -> float:
     """
     Returns the discrete distribution of the one hot encoded array
     """

@@ -1,35 +1,38 @@
 # --- Imports ------------------------------------------------------------------
 
-# Standard libraries
+# Standard library
 import os
 
-# Third party libraries
+# Third party
 import numpy as np
+from numpy.typing import ArrayLike
+
 import pandas as pd
 import pickle 
 
 from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
-# Local imports
+# Local
 from . import generate
 
 
-# --- Sets ---------------------------------------------------------------------
+# --- Dataset and Subset Classes -----------------------------------------------
 
 class Base:
     """
     Base class for Dataset and Subset providing shared save and load functions.
     """
     
-    def save(self, name, fileType="pickle", directory="../data", index=False):
+    def save(self, name: str, fileType: str = 'pickle', 
+             directory: str = '../data', index: bool = False) -> None:
         """
         Saves self.data as a file.
 
         Args:
-            name (str): The name of the file.
-            fileType (str, optional): The type of file (pickle or csv).
-            directory (str, optional): Directory to save the file in.
-            index (bool, optional): Whether to save the data index or not.
+            name: The name of the file.
+            fileType: The type of file (pickle or csv).
+            directory: Directory to save the file in.
+            index: Whether to save the data index or not.
         
         Raises:
             ValueError: If an unsupported file type is specified.
@@ -44,14 +47,15 @@ class Base:
         else:
             raise ValueError(f"Unsupported file type: {fileType}.")
 
-    def load(self, name, fileType="pickle", directory="../data"):
+    def load(self, name: str, fileType: str = 'pickle', 
+             directory: str = '../data') -> None:
         """
-        Loads self.data from a file.
+        Loads from a file into self.data.
 
         Args:
-            name (str): The name of the file.
-            fileType (str, optional): The type of file (pickle or csv).
-            directory (str, optional): Directory to load the file from.
+            name: The name of the file.
+            fileType: The type of file (pickle or csv).
+            directory: Directory to load the file from.
         
         Raises:
             ValueError: If an unsupported file type is specified.
@@ -72,22 +76,23 @@ class Dataset(Base):
     A class for creating, storing, and processing of datasets for subsetting
     """
 
-    def __init__(self, data=None, randTypes=None, size=None, interval=(1, 5), 
-                 features=None, seed=None):
+    def __init__(self, data: ArrayLike = None, randTypes: str | list = None, 
+                 size: tuple = None, interval: tuple = (1, 5), 
+                 features: list = None, 
+                 seed: int | np.random.Generator = None) -> None:
         """
         Initialize a dataset with data or by random data generation.
 
         Args:
-            data (array-like, optional): The DataFrame or ndarray of the data. 
-            randTypes (str or list, optional): The method or methods for random 
-                data generation. Supported methods: "uniform", "binary", 
-                "categorical", "normal", "multimodal", "skew", "blobs"
-            size (tuple): The size of the dataset to create for random dataset 
-                generation or the size of the data (num_rows, num_columns).
-            interval (tuple, optional): The interval for scaling data. 
-            features (list, optional): The list of column features to consider. 
-            seed (int, rng, optional): The random seed or Numpy rng for random 
-                generation and reproducibility. 
+            data: The DataFrame or array of the data. 
+            randTypes: The method or methods for random data generation. 
+                Supported methods: "uniform", "binary", "categorical", "normal",
+                "multimodal", "skew", "blobs"
+            size: The size of the dataset to create for random dataset 
+                generation or the size of the data (num rows, num columns).
+            interval: The interval for scaling data. 
+            features: The list of column features to consider.
+            seed: The random seed or generator for reproducibility. 
 
         Raises:
             ValueError: If no data or random generation method is specified.
@@ -120,10 +125,10 @@ class Dataset(Base):
         self.dataArray = self.data[self.features].to_numpy()
         self.interval = interval
 
-    def preprocess(self, **parameters):
+    def preprocess(self, **parameters) -> None:
         """
-        Perform custom preprocessing of preprocessFunction on self.dataArray and
-        assign it to the specified name.
+        Perform custom preprocessing of a preprocess function on self.dataArray
+        and assign it to the specified name.
 
         Args:
             parameters: Keyword arguments where the key is the name of the 
@@ -132,17 +137,20 @@ class Dataset(Base):
                 first element is the function and the second element is a 
                 dictionary of additional parameters.
         """
-        for name, preprocessTuple in parameters.items():
-            if isinstance(preprocessTuple, tuple):
-                function, funcParams = preprocessTuple
-                setattr(self, name, function(self.dataArray, **funcParams))
+        for name, preprocessor in parameters.items():
+            if isinstance(preprocessor, tuple): # with preprocessor parameters
+                preprocessor, parameters = preprocessor
+                setattr(self, name, preprocessor(self.dataArray, **parameters))
             else:
-                preprocessFunc = preprocessTuple
-                setattr(self, name, preprocessFunc(self.dataArray))
+                setattr(self, name, preprocessor(self.dataArray))
 
-    def scale(self, interval=None):
+    def scale(self, interval: tuple = None) -> None:
         """
         Scales self.dataArray numpy array based on self.interval tuple
+
+        Args:
+            interval: The interval to scale the data to. The class attribute is 
+            used if none is specified.
         """
         if interval is None:
             interval = self.interval
@@ -153,25 +161,22 @@ class Dataset(Base):
         self.dataArray = self.dataArray * (interval[1] - interval[0])
         self.dataArray += interval[0]
         
-    def discretize(self, bins, dimensions=1, features=None, strategy='uniform'):
+    def discretize(self, bins: int | ArrayLike, dimensions: int = 1, 
+                   features: list = None, strategy: str = 'uniform') -> None:
         """
         Discretize self.dataArray into bins.
 
         Arg: 
-            bins (int or array-like): Number of bins to use, bins in each 
-                feature, or bin edges.
-            dimensions (int, optional): Dimensionality of bins. 1 dimension bins
-                each feature separately. >1 uses bins in >=2D space
-            features (List, optional): The features to use for the binning
-            strategy (String, optional): sklearn KBinsDiscretizer strategy to 
-                use from 'uniform', 'quantile', or 'kmeans'.
+            bins: Number of bins to use, bins in each feature, or bin edges.
+            dimensions: Dimensionality of bins. Value of 1 bins each feature 
+                separately. Values >1 uses bins in >=2D space.
+            features: The features to use for the binning
+            strategy: sklearn KBinsDiscretizer strategy to use from 'uniform', 
+                'quantile', or 'kmeans'.
         
         Raises:
-            ValueError: if unknown strategy or dimensions given or features do 
-                not match necessary dimensionality
+            ValueError: if dimensions or features do not match dimensionality
         """
-        if strategy not in ['uniform', 'quantile', 'kmeans']:
-            raise ValueError("unknown strategy specified")
         if dimensions < 1:
             raise ValueError("unknown dimension specified")
         if features is None:
@@ -202,10 +207,10 @@ class Dataset(Base):
 
         self.bins = bins
         
-    def encode(self):
+    def encode(self) -> None:
         """
-        One hot encodes self.dataArray numpy array. Assumes continuous variables
-        have been binned if necessary.
+        One hot encodes self.dataArray with sklearn OneHotEncoder assuming data 
+        is discretized. 
         """
         encoder = OneHotEncoder()
         self.dataArray = encoder.fit_transform(self.dataArray).toarray()
@@ -216,14 +221,17 @@ class Subset(Base):
     A class for creating, storing, and handling subsets of datasets.
     """
 
-    def __init__(self, dataset, z):
+    def __init__(self, dataset: Dataset, z: ArrayLike, solveTime: float = None,
+                 loss: float = None) -> None:
         """
         Initialize a subset with a Dataset object and the indicator vector z.
 
         Args:
-            dataset (Dataset): The dataset from which to take the subset.
-            z (array-like): The indicator vector indicating which samples from 
-                the dataset are included in the subset.
+            dataset: The dataset from which to take the subset.
+            z: The indicator vector indicating which samples from the dataset 
+                are included in the subset.
+            solveTime: The computation time to solve for the subset in seconds.
+            loss: The calculated loss of the subset.
 
         Raises:
             ValueError: If length of z does not match the length of dataset.
@@ -241,8 +249,11 @@ class Subset(Base):
             self.size = (np.sum(z), dataset.size[1])
         
         self.data = dataset.data[z == 1].copy()  # subset of the full data
-        self.z = z
+        self.solveTime = solveTime
+        self.loss = loss
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation of the Subset object."""
-        return f"Subset(size={self.size})"
+        return (f"Subset(size: {self.size}, "
+                f"solve time: {round(self.solveTime, 2)}s, "
+                f"loss={round(self.loss, 2)})")

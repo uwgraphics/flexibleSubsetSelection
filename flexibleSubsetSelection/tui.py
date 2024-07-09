@@ -1,11 +1,10 @@
 # --- Imports ------------------------------------------------------------------
 
-# Standard libraries
+# Standard library
 import os
 
-# Local imports
-import escapes
-
+# Local
+from . import escapes
 
 # --- Screens ------------------------------------------------------------------
 
