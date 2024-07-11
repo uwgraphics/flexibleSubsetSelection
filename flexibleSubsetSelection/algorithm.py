@@ -6,6 +6,7 @@ import time
 # Third party
 import cvxpy as cp
 import numpy as np
+import ot
 
 
 # --- Utility ------------------------------------------------------------------
@@ -54,6 +55,7 @@ def optimize(objective, constraints, environment, solver, verbose=False):
         problem.solve(solver=solver, verbose=verbose, env=environment)
     else:
         problem.solve(solver=solver, verbose=verbose)
+
     return problem
 
 # --- Algorithms ---------------------------------------------------------------
@@ -166,7 +168,7 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0,
 
     for i in range(maxIterations):
         if verbose:
-            print(f"Iteration {i}: Loss {loss}")
+            print(f"Iteration {i}/{maxIterations}: Loss {loss}")
         if i not in indices:
             zSwapBest = np.copy(z)
             lossSwapBest = loss
@@ -473,3 +475,48 @@ def optimizeSum(dataset, environment, w, solver, verbose=False):
     timeTotal = time_1 - time_0
 
     return z.value.astype(int), timeTotal, problem.value
+
+
+def optimizeEMD(dataset, environment, subsetSize, solver=cp.GUROBI, verbose=False):
+
+    time_0 = time.time()
+
+    datasetLength = len(dataset.dataArray)
+    z = cp.Variable(datasetLength, boolean=True) # subset decision vector
+    constraints = [cp.sum(z) == subsetSize]
+    subset = np.array(z@dataset.dataArray)
+
+    objective = cp.Minimize(ot.emd2([], [], ot.dist(subset, dataset.dataArray)))
+    problem = optimize(objective, constraints, environment, solver, verbose)
+
+    time_1 = time.time()
+    timeTotal = time_1 - time_0
+
+    return z.value.astype(int), timeTotal, problem.value
+
+def optimizeDistribution(dataset, environment, subsetSize, verbose=False):
+    time_0 = time.time()
+
+    datasetLength, oneHotWidth = dataset.dataArray.shape
+    z = cp.Variable(datasetLength, boolean=True) # subset decision vector
+    t = cp.Variable(oneHotWidth) # L1 norm linearization vector
+
+    oneHotMeans = np.sum(dataset.dataArray, axis=0)/datasetLength
+    subsetMeans = (z@dataset.dataArray)/subsetSize
+
+    constraints = [cp.sum(z) == subsetSize,
+                   t >= 0,
+                   -t <= subsetMeans - oneHotMeans,
+                   t >= subsetMeans - oneHotMeans]
+
+    objective = cp.Minimize(cp.sum(t))
+    problem = optimize(objective, 
+                       constraints, 
+                       environment, 
+                       solver=cp.GUROBI, 
+                       verbose=verbose)
+
+    time_1 = time.time()
+    time_total = time_1 - time_0
+
+    return z.value.astype(int), time_total, problem.value

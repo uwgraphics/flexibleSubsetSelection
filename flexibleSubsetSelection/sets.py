@@ -37,13 +37,13 @@ class Base:
         Raises:
             ValueError: If an unsupported file type is specified.
         """
-        file_path = os.path.join(directory, f"{name}.{fileType}")
+        filePath = os.path.join(directory, f"{name}.{fileType}")
         
         if fileType == "pickle":
-            with open(file_path, 'wb') as f:
+            with open(filePath, 'wb') as f:
                 pickle.dump(self.data, f)
         elif fileType == "csv":
-            self.data.to_csv(file_path, index=index)
+            self.data.to_csv(filePath, index=index)
         else:
             raise ValueError(f"Unsupported file type: {fileType}.")
 
@@ -60,13 +60,13 @@ class Base:
         Raises:
             ValueError: If an unsupported file type is specified.
         """
-        file_path = os.path.join(directory, f"{name}.{fileType}")
+        filePath = os.path.join(directory, f"{name}.{fileType}")
         
         if fileType == "pickle":
-            with open(file_path, 'rb') as f:
+            with open(filePath, 'rb') as f:
                 self.data = pickle.load(f)
         elif fileType == "csv":
-            self.data = pd.read_csv(file_path)
+            self.data = pd.read_csv(filePath)
         else:
             raise ValueError(f"Unsupported file type: {fileType}.")
 
@@ -122,7 +122,9 @@ class Dataset(Base):
         else:
             self.features = features
 
+        # Initialize dataArray
         self.dataArray = self.data[self.features].to_numpy()
+        self.indices = {feature: i for i, feature in enumerate(self.features)}
         self.interval = interval
 
     def preprocess(self, **parameters) -> None:
@@ -161,15 +163,13 @@ class Dataset(Base):
         self.dataArray = self.dataArray * (interval[1] - interval[0])
         self.dataArray += interval[0]
         
-    def discretize(self, bins: int | ArrayLike, dimensions: int = 1, 
-                   features: list = None, strategy: str = 'uniform') -> None:
+    def discretize(self, bins: int | ArrayLike, features: list = None, 
+                   strategy: str = 'uniform') -> None:
         """
         Discretize self.dataArray into bins.
 
         Arg: 
             bins: Number of bins to use, bins in each feature, or bin edges.
-            dimensions: Dimensionality of bins. Value of 1 bins each feature 
-                separately. Values >1 uses bins in >=2D space.
             features: The features to use for the binning
             strategy: sklearn KBinsDiscretizer strategy to use from 'uniform', 
                 'quantile', or 'kmeans'.
@@ -177,43 +177,48 @@ class Dataset(Base):
         Raises:
             ValueError: if dimensions or features do not match dimensionality
         """
-        if dimensions < 1:
-            raise ValueError("unknown dimension specified")
         if features is None:
             features = self.features
 
-        # Get indices of the specified features
-        indices = [self.features.index(feature) for feature in features]
+        # Gets specified features
+        indices = [self.indices[feature] for feature in features]
         selected = self.dataArray[:, indices]
         discretizer = KBinsDiscretizer(n_bins = bins, 
                                        encode = 'ordinal', 
                                        strategy = strategy)
 
-        if dimensions == 1:
-            self.dataArray[:, indices] = discretizer.fit_transform(selected)
-        else:
-            numFeatures = len(features)
-            if dimensions > numFeatures:
-                raise ValueError(f"Cannot bin {features} in {dimensions}D")
-            
-            newData = []
-            for i in range(0, numFeatures, dimensions):
-                subset = selected[:, i:i+dimensions]
-                binnedSubset = discretizer.fit_transform(subset)
-                newData.append(binnedSubset)
-
-            binnedData = np.hstack(newData)
-            self.dataArray[:, indices] = binnedData
-
+        self.dataArray[:, indices] = discretizer.fit_transform(selected)
         self.bins = bins
         
-    def encode(self) -> None:
+    def encode(self, features: list = None, dimensions: int = 1) -> None:
         """
         One hot encodes self.dataArray with sklearn OneHotEncoder assuming data 
-        is discretized. 
+        is discretized.
+
+        Arg: 
+            features: The features to use for the binning
+            dimensions: The number of dimensions to take the encoding in
         """
-        encoder = OneHotEncoder()
-        self.dataArray = encoder.fit_transform(self.dataArray).toarray()
+        if features is None:
+            features = self.features
+
+        # Get specified features
+        indices = [self.indices[feature] for feature in features]
+        selected = self.dataArray[:, indices]
+
+        if dimensions > 1:
+            dims = [int(self.dataArray[:, i].max()) + 1 for i in indices]
+            selected = np.ravel_multi_index(selected.T.astype(int), dims=dims)
+            selected = selected.reshape(-1, 1)
+
+        # Apply OneHotEncoder
+        encoder = OneHotEncoder(sparse_output=False)
+        encoded = encoder.fit_transform(selected)
+        
+        # Remove the original columns and insert the one-hot encoded columns
+        mask = np.ones(self.dataArray.shape[1], dtype=bool)
+        mask[indices] = False
+        self.dataArray = np.hstack((self.dataArray[:, mask], encoded))
 
 
 class Subset(Base):
