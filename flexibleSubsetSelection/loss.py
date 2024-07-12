@@ -13,11 +13,36 @@ from . import sets
 
 # --- Loss Function ------------------------------------------------------------
 
-class MultiCriterion():
+class Base():
+    """
+    Base class for MultiCriterion and UniCriterion loss function classes 
+    providing shared select function.
+    """
+
+    def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
+        """
+        Selects a subset from array according to indicator z
+
+        Args:
+            array: to select from
+            z: indicator of what to select
+            selectBy: name of selection method to select by
+        
+            Returns: The selected subset from array
+        """
+        if selectBy == "row":
+            return array[z == 1]
+        elif selectBy == "matrix":
+            return array[z == 1][:, z == 1]
+        else:
+            raise ValueError("Unknown selection method specified.")
+
+class MultiCriterion(Base):
     """
     Create and apply multicriterion loss functions from a set of objectives and 
     corresponding weights for subset selection.
     """
+
     def __init__(self, objectives: ArrayLike, parameters: ArrayLike, 
                  weights: ArrayLike = None) -> None:
         """
@@ -65,7 +90,8 @@ class MultiCriterion():
         zipped = zip(self.objectives, self.parameters, self.weights)
         for objective, params, weight in zipped:
             array = getattr(dataset, params.get('solveArray', 'dataArray'))
-            subset = select(array, z, selectBy=params.get('selectBy', 'row'))
+            seletBy = params.get('selectBy', 'row')
+            subset = self.select(array, z, selectBy=selectBy)
 
             objectiveParameters = {
                 key: value for key, value in params.items() 
@@ -75,11 +101,12 @@ class MultiCriterion():
             loss += objectiveLoss
         return loss
     
-class UniCriterion():
+class UniCriterion(Base):
     """
     Create and apply a unicriterion loss function from an objective, apply to a 
     particular data array for subset selection.
     """
+
     def __init__(self, objective: Callable, solveArray: str = "dataArray", 
                  selectBy: str = "row", **parameters):
         """
@@ -93,7 +120,7 @@ class UniCriterion():
             selectBy: The method to select subset from array. 
             **parameters: Additional parameters of the objective function.
         """
-        self.objective = objective
+        self.objectives = objective
         self.solveArray = solveArray
         self.selectBy = selectBy
         self.parameters = parameters
@@ -112,23 +139,5 @@ class UniCriterion():
             float: The computed value of the loss function.
         """
         array = getattr(dataset, self.solveArray)
-        subset = select(array, z, selectBy=self.selectBy)
-        return self.objective(subset, **self.parameters)
-
-def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
-    """
-    Selects a subset from array according to indicator z
-
-    Args:
-        array: to select from
-        z: indicator of what to select
-        selectBy: name of selection method to select by
-    
-        Returns: The selected subset from array
-    """
-    if selectBy == "row":
-        return array[z == 1]
-    elif selectBy == "matrix":
-        return array[z == 1][:, z == 1]
-    else:
-        raise ValueError("Unknown selection method specified.")
+        subset = self.select(array, z, selectBy=self.selectBy)
+        return self.objectives(subset, **self.parameters)

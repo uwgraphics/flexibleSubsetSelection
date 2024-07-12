@@ -65,6 +65,9 @@ def outlierness(subset: np.ndarray, neighbors: int = 20) -> float:
     lof.fit(subset)
     return lof.negative_outlier_factor_
 
+def discreteDistribution(array: np.ndarray) -> float:
+    return 0
+
 def discreteCoverage(array: np.ndarray) -> float:
     """
     Computes the discrete coverage of the one hot encoded array

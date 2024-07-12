@@ -5,6 +5,7 @@ import time
 
 # Third party
 import cvxpy as cp
+import gurobipy as gp
 import numpy as np
 import ot
 
@@ -31,7 +32,19 @@ def randomSample(datasetSize: tuple, subsetSize: int,
     z[indices] = 1
     return z, indices
 
-def optimize(objective, constraints, environment, solver, verbose=False):
+def createEnvironment(outputFlag: int = 0):
+    """
+    Create and set up an environment required by the Gurobi solver
+
+    Arg: outputFlag: Flag for Gurobi output.
+    """
+    environment = gp.Env(empty=True)
+    environment.setParam("OutputFlag", outputFlag)
+    environment.start()
+    
+    return environment
+
+def optimize(objective, constraints, environment, solver, log_file='gurobi_log.txt', verbose=False):
     """
     Sets up a cvxpy problem with given objective and constraints and solves it 
     using the specified solver.
@@ -46,13 +59,15 @@ def optimize(objective, constraints, environment, solver, verbose=False):
             problem.
         verbose: Optional. Boolean flag indicating whether to print solver 
             output messages during optimization. Defaults to False.
+        log_file: Optional. File path for Gurobi log. Defaults to 'gurobi_log.txt'.
 
     Returns: problem: The cvxpy Problem object after solving, which contains 
         solution information and other attributes.
     """
     problem = cp.Problem(objective, constraints)
+    
     if solver == cp.GUROBI:
-        problem.solve(solver=solver, verbose=verbose, env=environment)
+        problem.solve(solver=solver, verbose=verbose, env=environment, logfile=log_file)
     else:
         problem.solve(solver=solver, verbose=verbose)
 
@@ -62,7 +77,6 @@ def optimize(objective, constraints, environment, solver, verbose=False):
 
 def bestOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
                maxIterations=None, seed=None, verbose=False, selectBy="row"):
-    time0 = time.time()
 
     if maxIterations is None:
         maxIterations = dataset.size[0]
@@ -77,15 +91,11 @@ def bestOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
             z = curZ
             minLoss = curLoss
 
-    time1 = time.time()
-    timeTotal = time1 - time0
-
-    return z, timeTotal, minLoss
+    return z, minLoss
 
 
 def averageOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
-               maxIterations=None, seed=None, verbose=False, selectBy="row"):
-    time0 = time.time()
+                    maxIterations=None, seed=None, verbose=False, selectBy="row"):
 
     if maxIterations is None:
         maxIterations = dataset.size[0]
@@ -99,10 +109,7 @@ def averageOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
 
     avgLoss = np.mean(losses)
 
-    time1 = time.time()
-    timeTotal = time1 - time0
-
-    return z, timeTotal, avgLoss
+    return z, avgLoss
 
 
 def worstOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
@@ -111,8 +118,6 @@ def worstOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
     maximize representativeness of a subset of size s of dataset of size n by m
     according to metric function f using the p-norm
     """
-    time0 = time.time()
-
     if maxIterations is None:
         maxIterations = dataset.size[0]
 
@@ -126,10 +131,7 @@ def worstOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
             z = curZ
             maxLoss = curLoss
 
-    time1 = time.time()
-    timeTotal = time1 - time0
-
-    return z, timeTotal, maxLoss
+    return z, maxLoss
 
 
 def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, 
@@ -150,13 +152,11 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0,
 
     Returns:
         z (array): Indicator vector of included items in the subset
-        timeTotal (float): Total execution time
         loss (float): The loss value of the final subset
     """
     if verbose:
         print(f"Solving for a subset of size {subsetSize} with "
               f"{lossFunction.objective.__name__} objective.")
-    time0 = time.time() # get start time
     iterations = 0
 
     # select random starting subset
@@ -195,10 +195,7 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0,
             if loss == minLoss:
                 break
 
-    time1 = time.time()       # get end time
-    timeTotal = time1 - time0 # calculate total time
-
-    return z, timeTotal, loss # return indices, total time and loss
+    return z, loss # return indicator and final loss
 
 def greedyMinSubset(dataset, lossFunction, epsilon, 
                     minError=0, maxIterations=None, seed=None, 
@@ -224,15 +221,12 @@ def greedyMinSubset(dataset, lossFunction, epsilon,
         timeTotal (float): Total execution time
         error (float): The error value of the final subset
     """
-    import time
-    import numpy as np
 
     # Extract dataset size
     datasetLength = dataset.size[0]
 
     if verbose:
         print(f"Solving for a subset such that {lossFunction.objective.__name__}(subset) <= {epsilon}")
-    time0 = time.time()  # get start time
     iterations = 0
     consecutive_stable_iterations = 0
     prev_subset_size = initialSize
@@ -320,17 +314,10 @@ def greedyMinSubset(dataset, lossFunction, epsilon,
 
         iterations += 1
 
-    time1 = time.time()  # get end time
-    timeTotal = time1 - time0  # calculate total time
+    return z, error
 
-    return z, timeTotal, error
-
-import numpy as np
-import time
-
-def greedyMixed(dataset, lossFunction, weight=1.0, 
-                            minError=0, maxIterations=None, seed=None, 
-                            verbose=False, initialSize=1):
+def greedyMixed(dataset, lossFunction, weight=1.0, minError=0, 
+                maxIterations=None, seed=None, verbose=False, initialSize=1):
     """
     A greedy algorithm to minimize the total loss = weight * subsetSize + lossFunction.calculate().
 
@@ -347,7 +334,6 @@ def greedyMixed(dataset, lossFunction, weight=1.0,
 
     Returns:
         z (array): Indicator vector of included items in the subset
-        timeTotal (float): Total execution time
         total_loss (float): The total loss value of the final subset
     """
     # Extract dataset size
@@ -355,7 +341,6 @@ def greedyMixed(dataset, lossFunction, weight=1.0,
 
     if verbose:
         print(f"Solving to minimize total loss = {weight} * subsetSize + lossFunction.calculate()")
-    time0 = time.time()  # get start time
     iterations = 0
 
     # Set the random seed
@@ -412,13 +397,11 @@ def greedyMixed(dataset, lossFunction, weight=1.0,
         
         iterations += 1
 
-    time1 = time.time()  # get end time
-    timeTotal = time1 - time0  # calculate total time
-
-    return z, timeTotal, total_loss  # return indicator vector, total time, and total loss
+    return z, total_loss  # return indicator vector, and total loss
 
 
-def optimizeCoverage(dataset, environment, subsetSize, verbose=False):
+def optimizeCoverage(dataset, lossFunction, environment, subsetSize, 
+                     verbose=False):
     """
     Optimize subset selection for coverage while minimizing L1 norm.
 
@@ -429,11 +412,8 @@ def optimizeCoverage(dataset, environment, subsetSize, verbose=False):
 
     Returns:
         z (numpy.ndarray): Binary array indicating the selected subset.
-        timeTotal (float): Total time taken for optimization.
         problem.value (float): The value of the optimization problem.
     """ 
-    time_0 = time.time()
-
     datasetLength, oneHotWidth = dataset.dataArray.shape
     z = cp.Variable(datasetLength, boolean=True) # subset decision vector
     t = cp.Variable(oneHotWidth) # L1 norm linearization vector
@@ -454,15 +434,10 @@ def optimizeCoverage(dataset, environment, subsetSize, verbose=False):
                        environment=environment, 
                        verbose=verbose)
 
-    time_1 = time.time()
-    timeTotal = time_1 - time_0
-
-    return z.value.astype(int), timeTotal, problem.value
+    return z.value.astype(int), problem.value
 
 
-def optimizeSum(dataset, environment, w, solver, verbose=False):
-
-    time_0 = time.time()
+def optimizeSum(dataset, lossFunction, environment, w, solver, verbose=False):
 
     datasetLength = len(dataset.dataArray)
     z = cp.Variable(datasetLength, boolean=True) # subset decision vector
@@ -471,15 +446,11 @@ def optimizeSum(dataset, environment, w, solver, verbose=False):
     objective = cp.Maximize(-w[0]*cp.sum(z) + w[1]*cp.sum(z@dataset.dataArray))
     problem = optimize(objective, constraints, environment, solver, verbose)
 
-    time_1 = time.time()
-    timeTotal = time_1 - time_0
-
-    return z.value.astype(int), timeTotal, problem.value
+    return z.value.astype(int), problem.value
 
 
-def optimizeEMD(dataset, environment, subsetSize, solver=cp.GUROBI, verbose=False):
-
-    time_0 = time.time()
+def optimizeEMD(dataset, lossFunction, environment, subsetSize, 
+                solver=cp.GUROBI, verbose=False):
 
     datasetLength = len(dataset.dataArray)
     z = cp.Variable(datasetLength, boolean=True) # subset decision vector
@@ -489,13 +460,10 @@ def optimizeEMD(dataset, environment, subsetSize, solver=cp.GUROBI, verbose=Fals
     objective = cp.Minimize(ot.emd2([], [], ot.dist(subset, dataset.dataArray)))
     problem = optimize(objective, constraints, environment, solver, verbose)
 
-    time_1 = time.time()
-    timeTotal = time_1 - time_0
+    return z.value.astype(int), problem.value
 
-    return z.value.astype(int), timeTotal, problem.value
-
-def optimizeDistribution(dataset, environment, subsetSize, verbose=False):
-    time_0 = time.time()
+def optimizeDistribution(dataset, lossFunction, environment, subsetSize, 
+                         verbose=False):
 
     datasetLength, oneHotWidth = dataset.dataArray.shape
     z = cp.Variable(datasetLength, boolean=True) # subset decision vector
@@ -516,7 +484,4 @@ def optimizeDistribution(dataset, environment, subsetSize, verbose=False):
                        solver=cp.GUROBI, 
                        verbose=verbose)
 
-    time_1 = time.time()
-    time_total = time_1 - time_0
-
-    return z.value.astype(int), time_total, problem.value
+    return z.value.astype(int), problem.value

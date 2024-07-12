@@ -2,6 +2,7 @@
 
 # Standard library
 from typing import Callable
+import csv
 
 # Third party
 import gurobipy as gp
@@ -9,6 +10,7 @@ import gurobipy as gp
 # Local
 from . import loss
 from . import sets
+from timer import Timer
 
 # --- Solver -------------------------------------------------------------------
 
@@ -18,7 +20,8 @@ class Solver():
     solving algorithm and loss function, applied to calculate a subset.
     """
     def __init__(self, algorithm: Callable, 
-                 loss: loss.UniCriterion | loss.MultiCriterion = None) -> None:
+                 loss: loss.UniCriterion | loss.MultiCriterion = None,
+                 logPath: str = "../data/solverLog.csv") -> None:
         """
         Initialize a subset selection solver with a solve algorithm and, 
         optionally, a loss function.
@@ -26,9 +29,21 @@ class Solver():
         Args:
             algorithm: The algorithm function to find the subset.
             loss: The loss function class object.
+            logPath: The path to the solver log file.
         """
         self.algorithm = algorithm
         self.loss = loss
+        self.logPath = logPath
+
+        # Initialize the log file with headers if it doesn't exist
+        try:
+            with open(self.logPath, 'x', newline='') as fp:
+                writer = csv.writer(fp)
+                writer.writerow(["Objective", "Algorithm", "Dataset Length", 
+                                 "Dataset Width", "Subset Length", 
+                                 "Computation Time", "Loss"])
+        except FileExistsError:
+            pass
 
     def solve(self, dataset: sets.Dataset, **parameters) -> sets.Subset:
         """
@@ -41,23 +56,30 @@ class Solver():
 
         Returns: The resulting subset of the selection solved for.
         """
-        if self.loss is None:
-            z, time, loss = self.algorithm(dataset = dataset, 
-                                           environment = self.environment, 
-                                           **parameters)
-        else:
-            z, time, loss = self.algorithm(dataset = dataset, 
-                                           lossFunction = self.loss,
-                                           **parameters)
+        with Timer() as timer:
+            z, loss = self.algorithm(dataset, self.loss, **parameters)
         
-        return sets.Subset(dataset, z, time, loss)
-    
-    def createEnvironment(self, outputFlag: int = 0):
-        """
-        Create and set up an environment required by the Gurobi solver
+        subset = sets.Subset(dataset, z, timer.elapsedTime, loss)
+        self.log(dataset.size, subset.size, self.loss.objectives,
+                 self.algorithm.__name__, timer.elapsedTime, loss)
 
-        Arg: outputFlag: Flag for Gurobi output.
-        """
-        self.environment = gp.Env(empty=True)
-        self.environment.setParam("OutputFlag", outputFlag)
-        self.environment.start()
+        return subset
+
+    def log(self, datasetSize: tuple, subsetSize: tuple, objectives, 
+            algorithm: str, computationTime: float, loss: float):
+        # Ensure objectives is a list or iterable of objectives
+        if not isinstance(objectives, list):
+            objectives = [objectives]
+
+        # Convert objectives list to a single string
+        objectivesStrList = [
+            obj.__name__ if callable(obj) else str(obj) for obj in objectives
+        ]
+        objectivesStr = '_'.join(objectivesStrList)
+
+        # Write log entry to the file
+        with open(self.logPath, 'a', newline='') as fp:
+            writer = csv.writer(fp)
+            writer.writerow([objectivesStr, algorithm, datasetSize[0], 
+                             datasetSize[1], subsetSize[0], computationTime, 
+                             loss])
