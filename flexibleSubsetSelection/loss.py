@@ -11,33 +11,10 @@ from numpy.typing import ArrayLike
 # Local
 from . import sets
 
+
 # --- Loss Function ------------------------------------------------------------
 
-class Base():
-    """
-    Base class for MultiCriterion and UniCriterion loss function classes 
-    providing shared select function.
-    """
-
-    def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
-        """
-        Selects a subset from array according to indicator z
-
-        Args:
-            array: to select from
-            z: indicator of what to select
-            selectBy: name of selection method to select by
-        
-            Returns: The selected subset from array
-        """
-        if selectBy == "row":
-            return array[z == 1]
-        elif selectBy == "matrix":
-            return array[z == 1][:, z == 1]
-        else:
-            raise ValueError("Unknown selection method specified.")
-
-class MultiCriterion(Base):
+class MultiCriterion():
     """
     Create and apply multicriterion loss functions from a set of objectives and 
     corresponding weights for subset selection.
@@ -85,14 +62,17 @@ class MultiCriterion(Base):
         Returns:
             float: The computed value of the overall loss function.
         """
-        print(dataset)
         loss = 0.0
         zipped = zip(self.objectives, self.parameters, self.weights)
         for objective, params, weight in zipped:
+            # retrieve solve array from attributes or default to dataArray
             array = getattr(dataset, params.get('solveArray', 'dataArray'))
-            seletBy = params.get('selectBy', 'row')
-            subset = self.select(array, z, selectBy=selectBy)
 
+            # retrieve selectBy from attributes or default to row
+            selectBy = params.get('selectBy', 'row')
+            subset = select(array, z, selectBy=selectBy)
+
+            # retrieve any remaining parameters as objective parameters
             objectiveParameters = {
                 key: value for key, value in params.items() 
                 if key not in ['solveArray', 'selectBy']
@@ -101,7 +81,7 @@ class MultiCriterion(Base):
             loss += objectiveLoss
         return loss
     
-class UniCriterion(Base):
+class UniCriterion():
     """
     Create and apply a unicriterion loss function from an objective, apply to a 
     particular data array for subset selection.
@@ -139,5 +119,23 @@ class UniCriterion(Base):
             float: The computed value of the loss function.
         """
         array = getattr(dataset, self.solveArray)
-        subset = self.select(array, z, selectBy=self.selectBy)
+        subset = select(array, z, selectBy=self.selectBy)
         return self.objectives(subset, **self.parameters)
+
+def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
+    """
+    Selects a subset from array according to indicator z
+
+    Args:
+        array: to select from
+        z: indicator of what to select
+        selectBy: name of selection method to select by
+    
+        Returns: The selected subset from array
+    """
+    if selectBy == "row":
+        return array[z == 1]
+    elif selectBy == "matrix":
+        return array[z == 1][:, z == 1]
+    else:
+        raise ValueError("Unknown selection method specified.")

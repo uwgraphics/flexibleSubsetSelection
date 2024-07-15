@@ -1,0 +1,11 @@
+Objective,Algorithm,Dataset Length,Dataset Width,Subset Length,Computation Time,Loss
+preserveMetric,greedyMinSubset,500,2,10,0.21195350005291402,0.0
+preserveMetric,greedyMinSubset,500,2,10,0.2130970419384539,0.0
+sum,greedySwap,500,2,40.0,0.07879195804707706,-83.29130795265314
+distinctiveness,greedySwap,500,2,60.0,0.6118886671029031,-94.68058703868581
+earthMoversDistance_distinctiveness,greedySwap,500,2,80.0,71.18988804193214,379.3933114425682
+earthMoversDistance_distinctiveness,greedySwap,500,2,80.0,78.45435554208234,-3.7205392880850745
+earthMoversDistance_distinctiveness,greedySwap,500,2,80.0,107.98421233287081,-102.30172029556466
+distinctiveness,greedyMixed,500,2,39,4.115684375166893,-56.83455620557304
+distinctiveness,greedyMixed,500,2,48,4.409124958096072,-76.06297765914213
+distinctiveness,greedyMixed,500,2,61,4.7673659168649465,-88.58013918030021
