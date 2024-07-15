@@ -63,6 +63,8 @@ class Solver():
         self.log(dataset.size, subset.size, self.loss.objectives,
                  self.algorithm.__name__, timer.elapsedTime, loss)
 
+        print(f"Solved for {subset}.")
+
         return subset
 
     def log(self, datasetSize: tuple, subsetSize: tuple, objectives, 

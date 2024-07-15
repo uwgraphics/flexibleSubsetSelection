@@ -39,7 +39,8 @@ def createEnvironment(outputFlag: int = 0):
     Arg: outputFlag: Flag for Gurobi output.
     """
     environment = gp.Env(empty=True)
-    environment.setParam("OutputFlag", outputFlag)
+    environment.setParam("OutputFlag", 1)
+    environment.setParam("LogFile", "../data/gurobiLog.log")
     environment.start()
     
     return environment
