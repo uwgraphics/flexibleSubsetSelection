@@ -20,7 +20,7 @@ class Solver():
     solving algorithm and loss function, applied to calculate a subset.
     """
     def __init__(self, algorithm: Callable, 
-                 loss: loss.UniCriterion | loss.MultiCriterion = None,
+                 lossFunction: loss.UniCriterion | loss.MultiCriterion = None,
                  logPath: str = "../data/solverLog.csv") -> None:
         """
         Initialize a subset selection solver with a solve algorithm and, 
@@ -32,14 +32,14 @@ class Solver():
             logPath: The path to the solver log file.
         """
         self.algorithm = algorithm
-        self.loss = loss
+        self.lossFunction = lossFunction
         self.logPath = logPath
 
         # Initialize the log file with headers if it doesn't exist
         try:
             with open(self.logPath, 'x', newline='') as fp:
                 writer = csv.writer(fp)
-                writer.writerow(["Objective", "Algorithm", "Dataset Length", 
+                writer.writerow(["Loss Function", "Algorithm", "Dataset Length", 
                                  "Dataset Width", "Subset Length", 
                                  "Computation Time", "Loss"])
         except FileExistsError:
@@ -57,31 +57,24 @@ class Solver():
         Returns: The resulting subset of the selection solved for.
         """
         with Timer() as timer:
-            z, loss = self.algorithm(dataset, self.loss, **parameters)
+            z, loss = self.algorithm(dataset, self.lossFunction, **parameters)
         
         subset = sets.Subset(dataset, z, timer.elapsedTime, loss)
-        self.log(dataset.size, subset.size, self.loss.objectives,
+
+        self.log(dataset.size, subset.size, self.lossFunction, 
                  self.algorithm.__name__, timer.elapsedTime, loss)
 
         print(f"Solved for {subset}.")
 
         return subset
 
-    def log(self, datasetSize: tuple, subsetSize: tuple, objectives, 
+    def log(self, datasetSize: tuple, subsetSize: tuple, 
+            lossFunction: loss.UniCriterion | loss.MultiCriterion, 
             algorithm: str, computationTime: float, loss: float):
-        # Ensure objectives is a list or iterable of objectives
-        if not isinstance(objectives, list):
-            objectives = [objectives]
-
-        # Convert objectives list to a single string
-        objectivesStrList = [
-            obj.__name__ if callable(obj) else str(obj) for obj in objectives
-        ]
-        objectivesStr = '_'.join(objectivesStrList)
 
         # Write log entry to the file
         with open(self.logPath, 'a', newline='') as fp:
             writer = csv.writer(fp)
-            writer.writerow([objectivesStr, algorithm, datasetSize[0], 
+            writer.writerow([str(lossFunction), algorithm, datasetSize[0], 
                              datasetSize[1], subsetSize[0], computationTime, 
                              loss])

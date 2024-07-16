@@ -81,6 +81,19 @@ class MultiCriterion():
             loss += objectiveLoss
         return loss
     
+    def __str__(self) -> str:
+        """
+        Return a string representation of the MultiCriterion loss function.
+        """
+        objectives = []
+        for objective, params, weight in zip(self.objectives, self.parameters, self.weights):
+            objectives.append(
+                f"Objective: {objective.__name__}, Parameters: {params}, Weight: {weight}"
+            )
+        objectives = ", ".join(objectives)
+        return f"MultiCriterion: {objectives}"
+
+    
 class UniCriterion():
     """
     Create and apply a unicriterion loss function from an objective, apply to a 
@@ -121,6 +134,18 @@ class UniCriterion():
         array = getattr(dataset, self.solveArray)
         subset = select(array, z, selectBy=self.selectBy)
         return self.objectives(subset, **self.parameters)
+    
+    def __str__(self) -> str:
+        """
+        Return a string representation of the UniCriterion loss function.
+        """
+        parameters = []
+        for key, value in self.parameters.items():
+            if callable(value):
+                parameters.append(f"{key}: {value.__name__}")
+        parameters = ", ".join(parameters)
+        
+        return f"Uni-criterion: {self.objectives.__name__}, {parameters}"
 
 def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
     """
