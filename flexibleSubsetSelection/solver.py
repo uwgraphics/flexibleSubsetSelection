@@ -7,7 +7,7 @@ import csv
 # Third party
 import gurobipy as gp
 
-# Local
+# Local files
 from . import loss
 from . import sets
 from timer import Timer

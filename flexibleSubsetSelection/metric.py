@@ -3,7 +3,6 @@
 # Third party
 import numpy as np
 import pandas as pd
-
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
 

@@ -8,7 +8,7 @@ from typing import Callable
 import numpy as np
 from numpy.typing import ArrayLike
 
-# Local
+# Local files
 from . import sets
 
 
@@ -85,15 +85,27 @@ class MultiCriterion():
         """
         Return a string representation of the MultiCriterion loss function.
         """
+        zipped = zip(self.objectives, self.parameters, self.weights)
         objectives = []
-        for objective, params, weight in zip(self.objectives, self.parameters, self.weights):
-            objectives.append(
-                f"Objective: {objective.__name__}, Parameters: {params}, Weight: {weight}"
-            )
-        objectives = ", ".join(objectives)
-        return f"MultiCriterion: {objectives}"
+        for objective, parameter, weight in zipped:
+            parameters = []
+            for key, value in parameter.items():
+                if callable(value):
+                    parameters.append(f"{key}: {value.__name__}")
+                if key == 'solveArray' and value != 'dataArray':
+                    parameters.append(value)
+            parameters = ", ".join(parameters)
 
-    
+            if len(parameters) > 0:
+                objectives.append((f"{weight}*({objective.__name__}, "
+                                   f"{parameters})"))
+            else:
+                objectives.append(f"{weight}*({objective.__name__})")
+        
+        objectives = " + ".join(objectives)
+        return f"Multi-criterion: {objectives}"
+
+
 class UniCriterion():
     """
     Create and apply a unicriterion loss function from an objective, apply to a 
@@ -142,10 +154,14 @@ class UniCriterion():
         parameters = []
         for key, value in self.parameters.items():
             if callable(value):
-                parameters.append(f"{key}: {value.__name__}")
+                parameters.append(value.__name__)
+        if self.solveArray != 'dataArray':
+                parameters.append(self.solveArray)
         parameters = ", ".join(parameters)
-        
-        return f"Uni-criterion: {self.objectives.__name__}, {parameters}"
+
+        if parameters:
+            return f"Uni-criterion: {self.objectives.__name__}, {parameters}"
+        return f"Uni-criterion: {self.objectives.__name__}"
 
 def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
     """

@@ -8,11 +8,11 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 import pandas as pd
-import pickle 
+import pickle
 
 from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
-# Local
+# Local files
 from . import generate
 
 
@@ -98,12 +98,12 @@ class Dataset(Base):
             ValueError: If no data or random generation method is specified.
         """
         # Initialize data
-        if data is not None:  # initialize with data
+        if data is not None:  # initialize with provided data
             self.size = data.shape
             if isinstance(data, pd.DataFrame):
                 self.data = data 
             else:
-                pd.DataFrame(data)
+                self.data = pd.DataFrame(data)
         elif randTypes is not None:  # initialize with random data generation
             if isinstance(randTypes, list):
                 self.data = pd.DataFrame({
@@ -159,12 +159,17 @@ class Dataset(Base):
 
         minVals = self.dataArray.min(axis=0)
         maxVals = self.dataArray.max(axis=0)
-        self.dataArray = (self.dataArray - minVals) / (maxVals - minVals)
+        
+        # Avoid division by zero
+        rangeVals = maxVals - minVals
+        rangeVals[rangeVals == 0] = 1
+
+        self.dataArray = (self.dataArray - minVals) / rangeVals
         self.dataArray = self.dataArray * (interval[1] - interval[0])
         self.dataArray += interval[0]
         
     def discretize(self, bins: int | ArrayLike, features: list = None, 
-                   strategy: str = 'uniform') -> None:
+                   strategy: str = 'uniform', array: str = None) -> None:
         """
         Discretize self.dataArray into bins.
 
@@ -173,12 +178,15 @@ class Dataset(Base):
             features: The features to use for the binning
             strategy: sklearn KBinsDiscretizer strategy to use from 'uniform', 
                 'quantile', or 'kmeans'.
+            array: The array to assignt he result to.
         
         Raises:
             ValueError: if dimensions or features do not match dimensionality
         """
         if features is None:
             features = self.features
+        if array is None:
+            array = "dataArray"
 
         # Gets specified features
         indices = [self.indices[feature] for feature in features]
@@ -187,10 +195,11 @@ class Dataset(Base):
                                        encode = 'ordinal', 
                                        strategy = strategy)
 
-        self.dataArray[:, indices] = discretizer.fit_transform(selected)
+        setattr(self, array, discretizer.fit_transform(selected))
         self.bins = bins
         
-    def encode(self, features: list = None, dimensions: int = 1) -> None:
+    def encode(self, features: list = None, dimensions: int = 1, 
+               array: str = None) -> None:
         """
         One hot encodes self.dataArray with sklearn OneHotEncoder assuming data 
         is discretized.
@@ -198,9 +207,12 @@ class Dataset(Base):
         Arg: 
             features: The features to use for the binning
             dimensions: The number of dimensions to take the encoding in
+            array: The array to assignt he result to.
         """
         if features is None:
             features = self.features
+        if array is None:
+            array = "dataArray"
 
         # Get specified features
         indices = [self.indices[feature] for feature in features]
@@ -218,8 +230,22 @@ class Dataset(Base):
         # Remove the original columns and insert the one-hot encoded columns
         mask = np.ones(self.dataArray.shape[1], dtype=bool)
         mask[indices] = False
-        self.dataArray = np.hstack((self.dataArray[:, mask], encoded))
+        setattr(self, array, np.hstack((self.dataArray[:, mask], encoded)))
 
+    def __repr__(self) -> str:
+        """
+        Return a detailed string representation of the Dataset object.
+        """
+        return (f"Dataset(size={self.size}, "
+                f"features={self.features}, "
+                f"interval={self.interval})")
+
+    def __str__(self) -> str:
+        """
+        Return a user-friendly string representation of the Dataset object.
+        """
+        return (f"Dataset with {self.size[0]} rows and {len(self.features)} "
+                f"features: {self.features}")
 
 class Subset(Base):
     """
@@ -242,23 +268,38 @@ class Subset(Base):
             ValueError: If length of z does not match the length of dataset.
             TypeError: If dataset is not an instance of Dataset.
         """
-        if not isinstance(dataset, Dataset):
-            raise TypeError("Dataset must be an instance of Dataset class.")
+        # if not isinstance(dataset, Dataset):
+        #     raise TypeError("Dataset must be an instance of Dataset class.")
         
-        if len(z) != dataset.data.shape[0]:
+        if len(z) != dataset.size[0]:
             raise ValueError("Length of z must match the length of dataset.")
 
+        length = int(np.sum(z))
         if dataset.data.ndim == 1:  # one-dimensional dataset
-            self.size = (np.sum(z),)
+            self.size = (length,)
         else:
-            self.size = (np.sum(z), dataset.size[1])
+            self.size = (length, dataset.size[1])
         
         self.data = dataset.data[z == 1].copy()  # subset of the full data
         self.solveTime = solveTime
         self.loss = loss
 
     def __repr__(self) -> str:
-        """Return a string representation of the Subset object."""
-        return (f"Subset(size: {self.size}, "
-                f"solve time: {round(self.solveTime, 2)}s, "
-                f"loss={round(self.loss, 2)})")
+        """
+        Return a detailed string representation of the Subset object.
+        """
+        return (f"Subset(size={self.size}, "
+                f"time={round(self.solveTime, 4)}s, "
+                f"loss={round(self.loss, 4)})")
+    
+    def __str__(self) -> str:
+        """
+        Return a user-friendly string representation of the Subset object.
+        """
+        if len(self.size) == 1:
+            size = str(self.size[0])
+        else:
+            size = f"{self.size[0]}x{self.size[1]}"
+
+        return (f"subset of size {size} in {round(self.solveTime, 2)}s "
+                f"with {round(self.loss, 2)} loss")

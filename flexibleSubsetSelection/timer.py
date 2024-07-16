@@ -1,5 +1,11 @@
+# --- Imports ------------------------------------------------------------------
+
+# Standard library
 from contextlib import ContextDecorator
 import time 
+
+
+# --- Timer --------------------------------------------------------------------
 
 class Timer(ContextDecorator):
     def __init__(self):

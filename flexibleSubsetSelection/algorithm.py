@@ -157,7 +157,7 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0,
     """
     if verbose:
         print(f"Solving for a subset of size {subsetSize} with "
-              f"{lossFunction.objective.__name__} objective.")
+              f"{lossFunction.objectives} objective.")
     iterations = 0
 
     # select random starting subset
@@ -227,7 +227,7 @@ def greedyMinSubset(dataset, lossFunction, epsilon,
     datasetLength = dataset.size[0]
 
     if verbose:
-        print(f"Solving for a subset such that {lossFunction.objective.__name__}(subset) <= {epsilon}")
+        print(f"Solving for a subset such that {lossFunction.objectives.__name__}(subset) <= {epsilon}")
     iterations = 0
     consecutive_stable_iterations = 0
     prev_subset_size = initialSize
@@ -395,6 +395,8 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
             current_loss = lossFunction.calculate(dataset, z)
             total_loss = weight * np.sum(z) + current_loss
             error = abs(total_loss)  # update error
+        else:
+            break;
         
         iterations += 1
 

@@ -38,7 +38,7 @@ def preserveMetric(subset: np.ndarray, metric: Callable,
     # Otherwise, use np.linalg.norm for array-like metric results
     return np.linalg.norm(datasetMetric - subsetMetric, ord=p)
 
-def distinctiveness(distances: np.ndarray) -> float:
+def distinctness(distances: np.ndarray) -> float:
     """
     An objective function for maximizing the distance to the nearest neighbor
     for each point in space
@@ -113,10 +113,8 @@ def clusterCenters(array: np.ndarray, clusterCenters: np.ndarray) -> float:
     Returns: The sum of distances to the nearest point for each cluster center.
     """
     # Calculate pairwise distance between data points and cluster centers
-    distances = np.linalg.norm(
-        array[:, np.newaxis, :] - clusterCenters[np.newaxis, :, :], 
-        axis=2
-    )
+    difference = array[:, np.newaxis, :] - clusterCenters[np.newaxis, :, :]
+    distances = np.linalg.norm(difference, axis=2)
 
     # Find the minimum distance to a data point for each cluster center
     minDistances = np.min(distances, axis=0)

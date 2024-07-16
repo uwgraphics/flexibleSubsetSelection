@@ -3,7 +3,7 @@
 # Standard library
 import os
 
-# Local
+# Local files
 from . import escapes
 
 # --- Screens ------------------------------------------------------------------

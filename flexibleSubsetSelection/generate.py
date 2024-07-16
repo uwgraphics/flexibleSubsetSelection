@@ -1,9 +1,9 @@
 # --- Imports ------------------------------------------------------------------
 
+# Third party
 import numpy as np
 import pandas as pd
 import scipy
-
 from sklearn.datasets import make_blobs
 
 
