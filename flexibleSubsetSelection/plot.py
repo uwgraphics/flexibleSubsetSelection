@@ -54,7 +54,26 @@ class Color:
             raise ValueError("Names and colors lists must be the same length.")
 
         return {name: self.palette[color] for name, color in zip(names, colors)}
- 
+    
+    def getGradientPalette(self, color: str, number: int = 6, 
+                           type: str = "light") -> list:
+        """
+        Create a gradient palette based on a base color.
+
+        Args:
+            color: The base color to create a gradient from.
+            number: Number of colors in the gradient palette.
+
+        Returns: A list of colors in the gradient palette.
+
+        Raises: ValueError if type is not light or dark.
+        """
+        if type == "light":
+            return sns.light_palette(color=self.palette[color], n_colors=number)
+        elif type == "dark":
+            return sns.dark_palette(color=self.palette[color], n_colors=number)
+        else:
+            raise ValueError("Palette type unrecognized.")
 
 # --- Figures ------------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 
 # Standard library
 from functools import partial
-from typing import Callable
+from typing import Any, Callable, Dict, List
 
 # Third party
 import numpy as np
@@ -16,11 +16,12 @@ from . import sets
 
 class MultiCriterion():
     """
-    Create and apply multicriterion loss functions from a set of objectives and 
+    Create and apply multi-criterion loss functions from a set of objectives and
     corresponding weights for subset selection.
     """
 
-    def __init__(self, objectives: ArrayLike, parameters: ArrayLike, 
+    def __init__(self, objectives: List[Callable], 
+                 parameters: List[Dict[str, Any]], 
                  weights: ArrayLike = None) -> None:
         """
         Define a multi-criterion loss function with a set of objectives, 
@@ -34,15 +35,15 @@ class MultiCriterion():
         Raises:
             ValueError: If weights or parameters has incorrect length.
         """
-        
+
         # Initialize weights
         if weights is None:
             weights = np.ones(len(objectives))
         if len(weights) != len(objectives):
-            raise ValueError("weights does not match length of objectives")
+            raise ValueError("Weights length must match objectives length.")
         if len(parameters) != len(objectives):
-            raise ValueError("parameters does not match length of objectives")
-        
+            raise ValueError("Parameters length must match objectives length.")
+
         self.objectives = objectives
         self.parameters = parameters
         self.weights = weights
@@ -66,21 +67,21 @@ class MultiCriterion():
         zipped = zip(self.objectives, self.parameters, self.weights)
         for objective, params, weight in zipped:
             # retrieve solve array from attributes or default to dataArray
-            array = getattr(dataset, params.get('solveArray', 'dataArray'))
+            array = getattr(dataset, params.get("solveArray", "dataArray"))
 
             # retrieve selectBy from attributes or default to row
-            selectBy = params.get('selectBy', 'row')
+            selectBy = params.get("selectBy", "row")
             subset = select(array, z, selectBy=selectBy)
 
             # retrieve any remaining parameters as objective parameters
             objectiveParameters = {
                 key: value for key, value in params.items() 
-                if key not in ['solveArray', 'selectBy']
+                if key not in ["solveArray", "selectBy"]
             }
             objectiveLoss = weight * objective(subset, **objectiveParameters)
             loss += objectiveLoss
         return loss
-    
+
     def __str__(self) -> str:
         """
         Return a string representation of the MultiCriterion loss function.
@@ -92,7 +93,7 @@ class MultiCriterion():
             for key, value in parameter.items():
                 if callable(value):
                     parameters.append(f"{key}: {value.__name__}")
-                if key == 'solveArray' and value != 'dataArray':
+                if key == "solveArray" and value != "dataArray":
                     parameters.append(value)
             parameters = ", ".join(parameters)
 
@@ -113,7 +114,7 @@ class UniCriterion():
     """
 
     def __init__(self, objective: Callable, solveArray: str = "dataArray", 
-                 selectBy: str = "row", **parameters):
+                 selectBy: str = "row", **parameters: Any):
         """
         Define a loss function with an objective and optional parameters for 
         subset selection.
@@ -125,7 +126,7 @@ class UniCriterion():
             selectBy: The method to select subset from array. 
             **parameters: Additional parameters of the objective function.
         """
-        self.objectives = objective
+        self.objective = objective
         self.solveArray = solveArray
         self.selectBy = selectBy
         self.parameters = parameters
@@ -145,7 +146,7 @@ class UniCriterion():
         """
         array = getattr(dataset, self.solveArray)
         subset = select(array, z, selectBy=self.selectBy)
-        return self.objectives(subset, **self.parameters)
+        return self.objective(subset, **self.parameters)
     
     def __str__(self) -> str:
         """
@@ -155,24 +156,26 @@ class UniCriterion():
         for key, value in self.parameters.items():
             if callable(value):
                 parameters.append(value.__name__)
-        if self.solveArray != 'dataArray':
+        if self.solveArray != "dataArray":
                 parameters.append(self.solveArray)
         parameters = ", ".join(parameters)
 
         if parameters:
-            return f"Uni-criterion: {self.objectives.__name__}, {parameters}"
-        return f"Uni-criterion: {self.objectives.__name__}"
+            return f"Uni-criterion: {self.objective.__name__}, {parameters}"
+        return f"Uni-criterion: {self.objective.__name__}"
 
-def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.array:
+def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.ndarray:
     """
     Selects a subset from array according to indicator z
 
     Args:
-        array: to select from
-        z: indicator of what to select
-        selectBy: name of selection method to select by
+        array: The array to select from.
+        z: The indicator vector indicating which elements to select.
+        selectBy: The method to select the subset (row or matrix).
     
-        Returns: The selected subset from array
+    Returns: The selected subset from the array.
+    
+    Raises: ValueError: If an unknown selection method is specified.
     """
     if selectBy == "row":
         return array[z == 1]
