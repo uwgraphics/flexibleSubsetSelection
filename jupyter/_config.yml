@@ -1,0 +1,21 @@
+# Book settings
+# Docs: https://jupyterbook.org/customize/config.html
+
+title: Flexible Subset Selection Examples
+author: Connor Bailey
+
+# Force re-execution of notebooks on each build.
+# Docs: https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: force
+
+# Information about where the book exists on the web
+repository: # Online location of your book
+  url: https://github.com/uwgraphics/flexibleSubsetSelection 
+  branch: main
+
+# Add GitHub buttons to your book
+# Docs: https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true

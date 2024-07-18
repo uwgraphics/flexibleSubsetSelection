@@ -1,0 +1,14 @@
+# Table of contents
+# Docs: https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: notebook/basicChecksStudy1
+chapters:
+- file: Fig1-designProcess
+# - file: Fig2&3-objectives
+# - file: Fig4-performance
+# - file: Fig5-scatterplotOverdraw
+# - file: Fig6-clusterRepresentatives
+# - file: Fig7-discreteCoverage
+# - file: Fig8-frameSelection
+# - file: Fig9-tables
