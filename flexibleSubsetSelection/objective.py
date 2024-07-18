@@ -33,6 +33,7 @@ def preserveMetric(subset: np.ndarray, metric: Callable,
     
     # If the metric results are scalars, use the absolute difference
     if np.isscalar(datasetMetric):
+        print(datasetMetric, subsetMetric)
         return np.abs(datasetMetric - subsetMetric)
 
     # Otherwise, use np.linalg.norm for array-like metric results
@@ -121,3 +122,12 @@ def clusterCenters(array: np.ndarray, clusterCenters: np.ndarray) -> float:
     
     # Return the sum of these minimum distances
     return np.sum(minDistances)
+
+def emdCategorical(subset, dataset, features, categorical, categories):
+    emd_losses = []
+    for category in categories:
+        subset_data = subset.loc[subset[categorical] == category, features].values
+        dataset_data = dataset.loc[dataset[categorical] == category, features].values
+        emd_loss = ot.emd2([], [], ot.dist(subset_data, dataset_data))
+        emd_losses.append(emd_loss)
+    return emd_losses

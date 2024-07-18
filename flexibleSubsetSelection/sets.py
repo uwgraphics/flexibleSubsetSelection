@@ -37,15 +37,21 @@ class Base:
         Raises:
             ValueError: If an unsupported file type is specified.
         """
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         filePath = os.path.join(directory, f"{name}.{fileType}")
         
-        if fileType == "pickle":
-            with open(filePath, 'wb') as f:
-                pickle.dump(self.data, f)
-        elif fileType == "csv":
-            self.data.to_csv(filePath, index=index)
-        else:
-            raise ValueError(f"Unsupported file type: {fileType}.")
+        try:
+            if fileType == "pickle":
+                with open(filePath, 'wb') as f:
+                    pickle.dump(self.data, f)
+            elif fileType == "csv":
+                self.data.to_csv(filePath, index=index)
+            else:
+                raise ValueError(f"Unsupported file type: {fileType}.")
+        except Exception as e:
+            print(f"Error saving file: {e}")
 
     def load(self, name: str, fileType: str = 'pickle', 
              directory: str = '../data') -> None:
@@ -62,13 +68,16 @@ class Base:
         """
         filePath = os.path.join(directory, f"{name}.{fileType}")
         
-        if fileType == "pickle":
-            with open(filePath, 'rb') as f:
-                self.data = pickle.load(f)
-        elif fileType == "csv":
-            self.data = pd.read_csv(filePath)
-        else:
-            raise ValueError(f"Unsupported file type: {fileType}.")
+        try:
+            if fileType == "pickle":
+                with open(filePath, 'rb') as f:
+                    self.data = pickle.load(f)
+            elif fileType == "csv":
+                self.data = pd.read_csv(filePath)
+            else:
+                raise ValueError(f"Unsupported file type: {fileType}.")
+        except Exception as e:
+            print(f"Error loading file: {e}")
 
 
 class Dataset(Base):

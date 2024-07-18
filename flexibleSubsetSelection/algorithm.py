@@ -131,7 +131,6 @@ def worstOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
         if curLoss > maxLoss:
             z = curZ
             maxLoss = curLoss
-        print(i, curLoss)
 
     return z, maxLoss
 
