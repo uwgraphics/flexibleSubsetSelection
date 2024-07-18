@@ -2,10 +2,9 @@
 # Docs: https://jupyterbook.org/customize/toc.html
 
 format: jb-book
-root: notebook/basicChecksStudy1
+root: Fig1-designProcess
 chapters:
-- file: Fig1-designProcess
-# - file: Fig2&3-objectives
+- file: Fig2&3-objectives
 # - file: Fig4-performance
 # - file: Fig5-scatterplotOverdraw
 # - file: Fig6-clusterRepresentatives
