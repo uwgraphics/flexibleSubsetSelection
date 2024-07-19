@@ -12,6 +12,7 @@ from . import loss
 from . import sets
 from .timer import Timer
 
+
 # --- Solver -------------------------------------------------------------------
 
 class Solver():

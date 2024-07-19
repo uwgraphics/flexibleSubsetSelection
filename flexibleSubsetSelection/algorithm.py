@@ -39,8 +39,9 @@ def createEnvironment(outputFlag: int = 0):
     Arg: outputFlag: Flag for Gurobi output.
     """
     environment = gp.Env(empty=True)
-    environment.setParam("OutputFlag", 1)
+    environment.setParam("OutputFlag", outputFlag)
     environment.setParam("LogFile", "../data/gurobiLog.log")
+    environment.setParam("ConcurrentMIP", 2)
     environment.start()
     
     return environment
