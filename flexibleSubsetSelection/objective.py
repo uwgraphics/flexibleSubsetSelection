@@ -33,7 +33,6 @@ def preserveMetric(subset: np.ndarray, metric: Callable,
     
     # If the metric results are scalars, use the absolute difference
     if np.isscalar(datasetMetric):
-        print(datasetMetric, subsetMetric)
         return np.abs(datasetMetric - subsetMetric)
 
     # Otherwise, use np.linalg.norm for array-like metric results
