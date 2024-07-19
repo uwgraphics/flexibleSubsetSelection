@@ -165,6 +165,6 @@ Data is stored in the `data` folder, which contains subdirectories containing sa
 Figures are stored in the `figures` directory as PDFs. 
 
 
-# Notebooks
+# [Notebooks](https://pages.graphics.cs.wisc.edu/flexibleSubsetSelection/)
 
-A series of example demonstration Jupyter Notebooks can be found in the `notebooks` directory.
+A series of example demonstration Jupyter Notebooks can be found in the `jupyter` directory. 
