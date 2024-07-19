@@ -125,3 +125,45 @@ Uni-criterion: clusterCenters,greedySwap,1000,2,10,0.13956262497231364,0.3799413
 "Uni-criterion: preserveMetric, hull",greedyMinSubset,500,2,12,0.2948356249835342,0.0
 "Uni-criterion: sum, outlierness",greedySwap,500,2,40,0.07649645791389048,-74.23043000890738
 "Uni-criterion: distinctness, distances",greedySwap,500,2,60,0.5947001250460744,-92.08564918686247
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,500,2,9,0.20904829213395715,0.0
+"Uni-criterion: sum, outlierness",greedySwap,500,2,40,0.08821466704830527,-79.95507869120974
+"Uni-criterion: distinctness, distances",greedySwap,500,2,60,0.6470217080786824,-94.69010039466121
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,500,2,10,0.221585167106241,0.0
+"Uni-criterion: sum, outlierness",greedySwap,500,2,40,0.08099545910954475,-76.8424909434427
+"Uni-criterion: distinctness, distances",greedySwap,500,2,60,0.6626855423673987,-87.75324874515424
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07839837530627847,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,0.03452433319762349,-76.73330214179785
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,0.15389200020581484,-72.30676106510778
+"Multi-criterion: 100*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,8.683466792106628,-37.832634391613226
+"Multi-criterion: 50*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,8.944492833223194,-55.336713455218515
+"Multi-criterion: 1*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,10.16267108405009,-77.45551739898436
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07779270829632878,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,0.029774457681924105,-70.13661593006383
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,0.1661411253735423,-76.52681602089089
+"Multi-criterion: 100*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,8.791529291309416,-35.549221713913795
+"Multi-criterion: 50*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,9.541060833260417,-56.63750965002805
+"Multi-criterion: 1*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,10.46921870810911,-83.31100611009497
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,12,0.0214225840754807,-37.26355923400367
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,36,0.0722177498973906,-57.328890897044175
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,28,0.05338112497702241,-58.87100686028796
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,17,0.03293449990451336,-44.09659907116473
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,55,0.11244387505576015,-61.49184399076313
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,101,0.24100016662850976,-86.10404158691499
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,15,0.031042208895087242,-37.86319298068655
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,50,0.10623954189941287,-61.01378931117458
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,103,0.24973824992775917,-83.00438182523874
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,20,0.0373823749832809,-45.76776906728566
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,11,0.017222166061401367,-44.268067171984875
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,92,0.2180039999075234,-82.50779303999899
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,23,0.04364325013011694,-44.964197525236315
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,52,0.10621762461960316,-61.43036396431012
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,85,0.2009903327561915,-79.26661008322394
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.06682970793917775,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,0.03168637491762638,-87.25866709672482
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,0.17151008266955614,-83.69038566035452
+"Multi-criterion: 100*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,9.204857917036861,-27.184808100622732
+"Multi-criterion: 10*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,10.099580999929458,-78.56242065843928
+"Multi-criterion: 1*(earthMoversDistance) + 1*(distinctness, distances)",greedySwap,200,2,80,10.901172333396971,-87.1982622784361
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,21,0.04174462519586086,-47.546951611341385
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,13,0.021749832667410374,-51.19458441796628
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,108,0.24733683420345187,-88.67659171843289

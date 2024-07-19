@@ -156,7 +156,7 @@ def errorMarkers(ax, x, vals1, color1, marker1, vals2=None, color2=None,
 
 # --- Plots --------------------------------------------------------------------
 
-def initialize(color, font="Times New Roman", family="sans-serif", size=42):
+def initialize(color, font="Times New Roman", size=42):
     """
     Initialize matplotlib settings global parameters for text and background
     
@@ -171,8 +171,7 @@ def initialize(color, font="Times New Roman", family="sans-serif", size=42):
     if not isinstance(color, Color):
         raise ValueError("color must be an instance of Color object")
     
-    plt.rcParams["font.sans-serif"] = font
-    plt.rcParams["font.family"] = family
+    plt.rcParams["font.family"] = font
     plt.rcParams["pdf.fonttype"] = size
     plt.rcParams["ps.fonttype"] = size
     plt.rcParams["axes.facecolor"] = color.palette["grey"]
