@@ -73,7 +73,7 @@ class Solver():
             lossFunction: loss.UniCriterion | loss.MultiCriterion, 
             algorithm: str, computationTime: float, loss: float):
 
-        # Write log entry to the file
+        # Write log entry to the log file
         with open(self.logPath, 'a', newline='') as fp:
             writer = csv.writer(fp)
             writer.writerow([str(lossFunction), algorithm, datasetSize[0], 

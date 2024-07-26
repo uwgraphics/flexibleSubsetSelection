@@ -41,7 +41,7 @@ def createEnvironment(outputFlag: int = 0):
     environment = gp.Env(empty=True)
     environment.setParam("OutputFlag", outputFlag)
     environment.setParam("LogFile", "../data/gurobiLog.log")
-    environment.setParam("ConcurrentMIP", 2)
+    # environment.setParam("ConcurrentMIP", 2)
     environment.start()
     
     return environment
@@ -87,6 +87,8 @@ def bestOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
     minLoss = lossFunction.calculate(dataset, z)
 
     for i in range(maxIterations):
+        if verbose:
+            print(f"{i}: {minLoss}")
         curZ = randomSample(dataset.size, subsetSize, seed)[0]
         curLoss = lossFunction.calculate(dataset, curZ)
         if curLoss < minLoss:
@@ -482,6 +484,34 @@ def optimizeDistribution(dataset, lossFunction, environment, subsetSize,
                    t >= subsetMeans - oneHotMeans]
 
     objective = cp.Minimize(cp.sum(t))
+    problem = optimize(objective, 
+                       constraints, 
+                       environment, 
+                       solver=cp.GUROBI, 
+                       verbose=verbose)
+
+    return z.value.astype(int), problem.value
+
+
+def sinkhorn(dataset, lossFunction, distanceMatrix, subsetSize, environment, lambdaReg=0.1, verbose=False):
+    datasetLength = dataset.size[0]
+    
+    # Decision variables
+    z = cp.Variable(datasetLength, boolean=True)  # Subset selection vector
+    gamma = cp.Variable((datasetLength, datasetLength), nonneg=True)  # Transport plan
+
+    # Define the objective: Minimize the Sinkhorn distance using the precomputed distance matrix
+    objective = cp.Minimize(cp.sum(cp.multiply(gamma, distanceMatrix)))
+
+    # Constraints
+    constraints = [
+        cp.sum(z) == subsetSize,
+        cp.sum(gamma, axis=0) == 1 / datasetLength,
+        cp.sum(gamma, axis=1) == z / subsetSize,
+        gamma >= 0
+    ]
+
+    # Formulate the problem
     problem = optimize(objective, 
                        constraints, 
                        environment, 

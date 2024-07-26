@@ -75,6 +75,7 @@ class Color:
         else:
             raise ValueError("Palette type unrecognized.")
 
+
 # --- Figures ------------------------------------------------------------------
 
 def moveFigure(fig, x, y):
@@ -111,6 +112,7 @@ def onPick(event, color):
         line._color = color.palette["yellow"]
         line.zorder = 3
     line._axes.figure.canvas.draw_idle()
+
 
 # --- Error Markers ------------------------------------------------------------
 
@@ -156,7 +158,8 @@ def errorMarkers(ax, x, vals1, color1, marker1, vals2=None, color2=None,
 
 # --- Plots --------------------------------------------------------------------
 
-def initialize(color, font="Times New Roman", size=42):
+def initialize(color, font: str = "Times New Roman", size: int = 42, 
+               faceColorAx = None, faceColorFig = None) -> None:
     """
     Initialize matplotlib settings global parameters for text and background
     
@@ -174,9 +177,17 @@ def initialize(color, font="Times New Roman", size=42):
     plt.rcParams["font.family"] = font
     plt.rcParams["pdf.fonttype"] = size
     plt.rcParams["ps.fonttype"] = size
-    plt.rcParams["axes.facecolor"] = color.palette["grey"]
-    plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["figure.autolayout"] = True
+
+    if faceColorFig is None:
+        plt.rcParams["figure.facecolor"] = "white"
+    else:
+        plt.rcParams["axes.facecolor"] = faceColorFig
+
+    if faceColorAx is None:
+        plt.rcParams["axes.facecolor"] = color.palette["grey"]
+    else:
+        plt.rcParams["axes.facecolor"] = faceColorAx
 
 def scatter(ax, color, dataset=None, subset=None, features=(0, 1), 
             **parameters):
@@ -201,6 +212,7 @@ def scatter(ax, color, dataset=None, subset=None, features=(0, 1),
                         y = features[1], 
                         color = color.palette["green"],
                         ax = ax,
+                        zorder=3,
                         **parameters)
         
     if subset is not None:

@@ -87,6 +87,30 @@ def earthMoversDistance(subset: np.ndarray, dataset: np.ndarray) -> float:
     """
     return ot.emd2([], [], ot.dist(subset, dataset))
 
+def sinkhornDistance(distances: np.ndarray, reg: float = 0.1, 
+                     verbose: bool = False) -> float:
+    """
+    Computes the Sinkhorn distance using the POT library.
+
+    Args:
+        distances (np.ndarray): distance matrix .
+        reg (float, optional): Regularization parameter. Defaults to 0.1.
+        verbose (bool, optional): If True, print progress messages. Defaults to False.
+
+    Returns:
+        float: Sinkhorn distance.
+    """
+    n, m = subset.shape[0], dataset.shape[0]
+    distanceMatrix = compute_distance_matrix(subset, dataset)
+    print("Computed Distance Matrix")
+
+    return ot.sinkhorn2(np.ones(n) / n, 
+                        np.ones(m) / m, 
+                        distanceMatrix, 
+                        reg,
+                        stopThr=1e-05,
+                        verbose=verbose)
+
 def pcpLineCrossings(array: np.ndarray) -> int:
     """Returns the total number of line crosses"""
     sum = 0
