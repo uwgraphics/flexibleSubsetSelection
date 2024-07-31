@@ -159,8 +159,7 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0,
         loss (float): The loss value of the final subset
     """
     if verbose:
-        print(f"Solving for a subset of size {subsetSize} with "
-              f"{lossFunction.objectives} objective.")
+        print(f"Solving for a subset of size {subsetSize}.")
     iterations = 0
 
     # select random starting subset
@@ -491,7 +490,6 @@ def optimizeDistribution(dataset, lossFunction, environment, subsetSize,
                        verbose=verbose)
 
     return z.value.astype(int), problem.value
-
 
 def sinkhorn(dataset, lossFunction, distanceMatrix, subsetSize, environment, lambdaReg=0.1, verbose=False):
     datasetLength = dataset.size[0]

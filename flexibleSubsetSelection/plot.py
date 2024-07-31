@@ -2,7 +2,9 @@
 
 # Third party
 import matplotlib
+from matplotlib.colors import to_rgb, to_hex
 import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -113,6 +115,12 @@ def onPick(event, color):
         line.zorder = 3
     line._axes.figure.canvas.draw_idle()
 
+def initializePane3D(ax, color):
+    """Initialize the color of the background panes with hex color for 3D."""
+    rgb = to_rgb(color)
+    ax.xaxis.set_pane_color(to_hex([min(1, c + (1 - c)*0.05) for c in rgb]))
+    ax.yaxis.set_pane_color(to_hex([max(0, c*0.95) for c in rgb]))
+    ax.zaxis.set_pane_color(rgb)
 
 # --- Error Markers ------------------------------------------------------------
 
@@ -206,25 +214,43 @@ def scatter(ax, color, dataset=None, subset=None, features=(0, 1),
 
     if dataset is None and subset is None:
         raise ValueError("no dataset or subset specified")
-    if dataset is not None:
-        sns.scatterplot(data = dataset.data, 
-                        x = features[0], 
-                        y = features[1], 
-                        color = color.palette["green"],
-                        ax = ax,
-                        zorder=3,
-                        **parameters)
-        
-    if subset is not None:
-        sns.scatterplot(data = subset.data, 
-                        x = features[0], 
-                        y = features[1], 
-                        color = color.palette["darkGreen"], 
-                        ax = ax,
-                        zorder=4,
-                        **parameters)
-        
-def parallelCoordinates(ax, dataset, color, subset=None, dataLinewidth=0.5, 
+    
+    if len(features) == 3:
+        if dataset is not None:
+            ax.scatter(dataset.data[features[0]], 
+                       dataset.data[features[1]], 
+                       dataset.data[features[2]], 
+                       color=color.palette["green"], 
+                       zorder=3, 
+                       **parameters)
+
+        if subset is not None:
+            ax.scatter(subset.data[features[0]], 
+                       subset.data[features[1]], 
+                       subset.data[features[2]], 
+                       color=color.palette["darkGreen"], 
+                       zorder=4, 
+                       **parameters)
+        initializePane3D(ax, color["grey"])
+    else:
+        if dataset is not None:
+            sns.scatterplot(data = dataset.data, 
+                            x = features[0], 
+                            y = features[1], 
+                            color = color.palette["green"],
+                            ax = ax,
+                            zorder=3,
+                            **parameters)
+        if subset is not None:
+            sns.scatterplot(data = subset.data, 
+                            x = features[0], 
+                            y = features[1], 
+                            color = color.palette["darkGreen"], 
+                            ax = ax,
+                            zorder=4,
+                            **parameters)
+
+def parallelCoordinates(ax, color, dataset=None, subset=None, dataLinewidth=0.5, 
                         subsetLinewidth=1.5, **parameters):
     """
     Plot a parallel coordinates chart of dataset on ax

@@ -121,6 +121,8 @@ class Dataset(Base):
                 })
             else:
                 self.data = generate.randomData(randTypes, size, interval, seed)
+            if features is not None:
+                self.data.columns = features
             self.size = size
         else:
             raise ValueError("No data or random generation method specified.")
