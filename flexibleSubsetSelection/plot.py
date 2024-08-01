@@ -126,9 +126,9 @@ def onPick(event, color: Color):
 def initializePane3D(ax: Axes, color: str):
     """Initialize the color of the background panes with hex color for 3D."""
     rgb = to_rgb(color)
-    ax.xaxis.set_pane_color(to_hex([min(1, c + (1 - c)*0.05) for c in rgb]))
-    ax.yaxis.set_pane_color(to_hex([max(0, c*0.95) for c in rgb]))
-    ax.zaxis.set_pane_color(rgb)
+    ax.zaxis.set_pane_color(to_hex([min(1, c + (1 - c)*0.03) for c in rgb]))
+    ax.xaxis.set_pane_color(to_hex([max(0, c*0.97) for c in rgb]))
+    ax.yaxis.set_pane_color(rgb)    
 
 
 # --- Error Indicators ---------------------------------------------------------
@@ -256,62 +256,64 @@ def initialize(color, font: str = "Times New Roman", size: int = 42,
         plt.rcParams["axes.facecolor"] = faceColorFig
 
     if faceColorAx is None:
-        plt.rcParams["axes.facecolor"] = color.palette["grey"]
+        plt.rcParams["axes.facecolor"] = color["grey"]
     else:
         plt.rcParams["axes.facecolor"] = faceColorAx
 
 def scatter(ax: Axes, color: Color, dataset: (sets.Dataset | None) = None, 
-            subset: (sets.Subset | None) = None, features=(0, 1), 
+            subset: (sets.Subset | None) = None, features: (list | None) = None, 
             **parameters) -> None:
     """
     Plot a scatterplot of data features on ax
 
     Args:
-        ax (matplotlib ax): The axis to plot the scatterplot on
-        color (Color object): A color object with the color palette to use
-        dataset (sets.Dataset object, optional): The dataset to plot
-        subset (sets.Subset object, optional): The subset to plot
-        features (tuple, optional): The features to plot on x and y axes
+        ax: The axis to plot the scatterplot on.
+        color: A color object with the color palette to use.
+        dataset: The dataset to plot.
+        subset: The subset to plot.
+        features: The features to plot on x and y axes.
+        **parameters: Additional parameters to pass to the plotting functions.
     
-    Raises: ValueError: If neither a dataset or subset are provided
+    Raises: 
+        ValueError: If neither a dataset or subset are provided or 3D data 
+        is specified without a 3D axis.
     """
-
     if dataset is None and subset is None:
-        raise ValueError("no dataset or subset specified")
-
+        raise ValueError("No dataset or subset specified.")
+    if features is None:
+        features = list(range(dataset.size[1] if dataset else subset.size[1]))
     if len(features) == 3:
+        if not hasattr(ax, "zaxis"):
+            raise ValueError("3D data is specified but axis is not 3D.")
+        initializePane3D(ax, color["grey"])
         if dataset is not None:
             ax.scatter(dataset.data[features[0]], 
                        dataset.data[features[1]], 
                        dataset.data[features[2]], 
-                       color=color.palette["green"], 
-                       zorder=3, 
+                       color = color["green"], 
                        **parameters)
-
-        if subset is not None:
+        if subset is not None: 
             ax.scatter(subset.data[features[0]], 
                        subset.data[features[1]], 
                        subset.data[features[2]], 
-                       color=color.palette["darkGreen"], 
-                       zorder=4, 
+                       color = color["darkGreen"], 
                        **parameters)
-        initializePane3D(ax, color["grey"])
     else:
         if dataset is not None:
             sns.scatterplot(data = dataset.data, 
                             x = features[0], 
                             y = features[1], 
-                            color = color.palette["green"],
+                            color = color["green"], 
                             ax = ax,
-                            zorder=3,
+                            zorder = 3,
                             **parameters)
         if subset is not None:
             sns.scatterplot(data = subset.data, 
                             x = features[0], 
                             y = features[1], 
-                            color = color.palette["darkGreen"], 
+                            color = color["darkGreen"], 
                             ax = ax,
-                            zorder=4,
+                            zorder = 4,
                             **parameters)
 
 def parallelCoordinates(ax: Axes, color: Color, 

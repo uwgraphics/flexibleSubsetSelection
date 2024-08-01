@@ -289,8 +289,8 @@ class Subset(Base):
             ValueError: If length of z does not match the length of dataset.
             TypeError: If dataset is not an instance of Dataset.
         """
-        # if not isinstance(dataset, Dataset):
-        #     raise TypeError("Dataset must be an instance of Dataset class.")
+        if not isinstance(dataset, Dataset):
+            raise TypeError("Dataset must be an instance of Dataset class.")
         
         if len(z) != dataset.size[0]:
             raise ValueError("Length of z must match the length of dataset.")
@@ -309,9 +309,12 @@ class Subset(Base):
         """
         Return a detailed string representation of the Subset object.
         """
-        return (f"Subset(size={self.size}, "
-                f"time={round(self.solveTime, 4)}s, "
-                f"loss={round(self.loss, 4)})")
+        string = f"Subset(size={self.size}"
+        if self.solveTime is not None:
+            string = ", ".join(string, f"time={round(self.solveTime, 4)}s")
+        if self.loss is not None:
+            string = ", ".join(string, f"loss={round(self.loss, 4)})")
+        return string
     
     def __str__(self) -> str:
         """
@@ -322,5 +325,9 @@ class Subset(Base):
         else:
             size = f"{self.size[0]}x{self.size[1]}"
 
-        return (f"subset of size {size} in {round(self.solveTime, 2)}s "
-                f"with {round(self.loss, 2)} loss")
+        string = f"subset of size {size}"
+        if self.solveTime is not None:
+            string += f" in {round(self.solveTime, 2)}s "
+        if self.loss is not None:
+            string += f"with {round(self.loss, 2)} loss"
+        return string
