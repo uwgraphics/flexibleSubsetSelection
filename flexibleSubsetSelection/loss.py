@@ -22,7 +22,7 @@ class MultiCriterion():
 
     def __init__(self, objectives: List[Callable], 
                  parameters: List[Dict[str, Any]], 
-                 weights: ArrayLike = None) -> None:
+                 weights: (np.ndarray | None) = None) -> None:
         """
         Define a multi-criterion loss function with a set of objectives, 
         weights, and parameters

@@ -21,7 +21,9 @@ class Solver():
     solving algorithm and loss function, applied to calculate a subset.
     """
     def __init__(self, algorithm: Callable, 
-                 lossFunction: loss.UniCriterion | loss.MultiCriterion = None,
+                 lossFunction: (loss.UniCriterion | 
+                                loss.MultiCriterion | 
+                                None) = None,
                  logPath: str = "../data/solverLog.csv") -> None:
         """
         Initialize a subset selection solver with a solve algorithm and, 

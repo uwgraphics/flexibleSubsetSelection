@@ -9,8 +9,8 @@ from sklearn.datasets import make_blobs
 
 # --- Random Dataset Generation ------------------------------------------------
 
-def randomData(randType: str | list, size: tuple, interval: tuple, 
-               seed: int | np.random.Generator = None) -> pd.DataFrame:
+def randomData(randType: str, size: tuple, interval: tuple, 
+               seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
     """
     Generate random data based on the specified random generation method.
 
@@ -31,7 +31,7 @@ def randomData(randType: str | list, size: tuple, interval: tuple,
     generators = {
         "uniform": uniform,
         "binary": binary,
-        "categorical": categorical,
+        "categories": categories,
         "normal": normal,
         "multimodal": multimodal,
         "skew": skew,
@@ -48,7 +48,7 @@ def randomData(randType: str | list, size: tuple, interval: tuple,
         raise ValueError(f"unknown random generation method: {randType}")
 
 def uniform(size: tuple, interval: tuple, 
-            seed: int | np.random.Generator = None) -> pd.DataFrame:
+            seed: (int | np.random.Generator| None) = None) -> pd.DataFrame:
     """
     Generate random data from a uniform distribution using numpy.
 
@@ -63,7 +63,8 @@ def uniform(size: tuple, interval: tuple,
     data = rng.uniform(interval[0], interval[1], size=size)
     return pd.DataFrame(data)
 
-def binary(size: tuple, seed: int | np.random.Generator = None) -> pd.DataFrame:
+def binary(size: tuple, 
+           seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
     """
     Generate random binary data points of bernoulli trials using numpy where 
     each feature has a random probability p.
@@ -79,8 +80,8 @@ def binary(size: tuple, seed: int | np.random.Generator = None) -> pd.DataFrame:
     data = rng.binomial(1, probabilities, size=size)
     return pd.DataFrame(data)
 
-def categorical(size: tuple, interval: tuple, 
-                seed: int | np.random.Generator = None) -> pd.DataFrame:
+def categories(size: tuple, interval: tuple, 
+               seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
     """
     Generate random categorical data points using numpy with a random number of 
     categories and a random probability p in interval.
@@ -101,7 +102,7 @@ def categorical(size: tuple, interval: tuple,
     return pd.DataFrame(data)
 
 def normal(size: tuple, interval: tuple, 
-           seed: int | np.random.Generator = None) -> pd.DataFrame:
+           seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
     """
     Generate random data from a normal distribution using numpy centered on 
     random mean and with random standard deviation.
@@ -121,7 +122,7 @@ def normal(size: tuple, interval: tuple,
     return pd.DataFrame(data)
 
 def multimodal(size: tuple, interval: tuple, sigmaInterval: tuple = (0.1, 3), 
-               seed: int | np.random.Generator = None) -> pd.DataFrame:
+               seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
     """
     Generate random data from multimodal distributions using numpy with a random
     number of normal distributions centered on random means and standard 
@@ -157,7 +158,7 @@ def multimodal(size: tuple, interval: tuple, sigmaInterval: tuple = (0.1, 3),
     return pd.DataFrame(data)
 
 def skew(size: tuple, interval: tuple = (-5, 5), 
-         seed: int | np.random.Generator = None) -> pd.DataFrame:
+         seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
     """
     Generate random data from skewed distributions using scipy with random 
     skewness parameter.
@@ -182,7 +183,7 @@ def skew(size: tuple, interval: tuple = (-5, 5),
 
 def blobs(size: tuple, interval: tuple, numClusters: int = 6, 
           sigmaInterval: tuple = (0.1, 3), 
-          seed: int | np.random.Generator = None) -> pd.DataFrame:
+          seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
     """
     Generate random data points using sklearn with numClusters blobs and with 
     random means and standard deviations.

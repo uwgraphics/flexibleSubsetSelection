@@ -1,14 +1,21 @@
 # --- Imports ------------------------------------------------------------------
 
+# Standard library
+from typing import Callable
+
 # Third party
 import matplotlib
+from matplotlib.axes import Axes
 from matplotlib.colors import to_rgb, to_hex
+from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
+# Local files
+from . import sets
 
 # --- Color --------------------------------------------------------------------
 
@@ -16,9 +23,12 @@ class Color:
     """
     Create and store color palettes and color bars for use in visualizations
     """
-    def __init__(self, palette: dict = None):
+    def __init__(self, palette: dict | None = None):
         """
         Initialize the class with a custom or default palette
+
+        Args:
+            palette: dictionary of color names and color values
         """
         if palette is None:
             self.palette = {
@@ -33,9 +43,7 @@ class Color:
             self.palette = palette
 
     def __getitem__(self, color):
-        """
-        Returns a color value from the palette directly.
-        """
+        """Returns a color value from the palette directly."""
         return self.palette[color]  
 
     def getPalette(self, names: list, colors: list) -> dict:
@@ -80,8 +88,8 @@ class Color:
 
 # --- Figures ------------------------------------------------------------------
 
-def moveFigure(fig, x, y):
-    """move figure's upper left corner to pixel (x, y)"""
+def moveFigure(fig, x: int, y: int):
+    """Move figure's upper left corner to pixel (x, y)."""
     backend = matplotlib.get_backend()
     if backend == "TkAgg":
         fig.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
@@ -91,21 +99,21 @@ def moveFigure(fig, x, y):
         fig.canvas.manager.window.move(x, y)
 
 def clearAxes(fig):
-    """clear all axes in the figure"""
+    """Clear all axes in the figure."""
     for ax in fig.get_axes():
         ax.cla()
 
 def removeAxes(fig):
-    """remove all axes in the figure"""
+    """Remove all axes in the figure."""
     for ax in fig.get_axes():
         ax.remove()
 
-def setPickEvent(fig, pickFunction):
-    """Set pickFunction as a pick event on the figure"""
+def setPickEvent(fig, pickFunction: Callable):
+    """Set pickFunction as a pick event on the figure."""
     fig.canvas.mpl_connect("pick_event", pickFunction)
 
-def onPick(event, color):
-    """Toggle color of the selected item between green and yellow on event"""
+def onPick(event, color: Color):
+    """Toggle color of the selected item between green and yellow on event."""
     line = event.artist
     if line._color == color.palette["yellow"]:
         line._color = color.palette["green"]
@@ -115,59 +123,114 @@ def onPick(event, color):
         line.zorder = 3
     line._axes.figure.canvas.draw_idle()
 
-def initializePane3D(ax, color):
+def initializePane3D(ax: Axes, color: str):
     """Initialize the color of the background panes with hex color for 3D."""
     rgb = to_rgb(color)
     ax.xaxis.set_pane_color(to_hex([min(1, c + (1 - c)*0.05) for c in rgb]))
     ax.yaxis.set_pane_color(to_hex([max(0, c*0.95) for c in rgb]))
     ax.zaxis.set_pane_color(rgb)
 
-# --- Error Markers ------------------------------------------------------------
 
-def errorBar(ax, x, vals1, vals2, color):
-    """
-    plot a series of error bars on ax along x between vals1 and vals2 of
-    given color
-    """
-    ax.errorbar(x=x,
-                y=(vals1 + vals2)/2,
-                yerr=abs(vals1 - vals2)/2,
-                ecolor=color,
-                ls="none",
-                elinewidth=3,
-                capsize=5,
-                capthick=1.5,
-                zorder=4)
+# --- Error Indicators ---------------------------------------------------------
 
-def errorMarkers(ax, x, vals1, color1, marker1, vals2=None, color2=None, 
-                 marker2=None):
+def errorBars(ax: Axes, x: float, vals1: float, vals2: float, color: str) -> None:
     """
-    plot a series of error markers on ax along x at vals1 and optionally vals2 
-    of given colors
-    """
+    Plot a series of error bars on ax along x between vals1 and vals2 of a 
+    given color.
 
-    for i in x:
-        if vals1[i].size > 0:
-            for j in range(vals1[i].size):
-                ax.plot(x[i], vals1[i][j], 
+    Args:
+        ax: The axes on which to plot.
+        x: The x-coordinate for the error bars.
+        vals1: The first set of values.
+        vals2: The second set of values.
+        color: The color of the error bars.
+    """
+    ax.errorbar(x = x,
+                y = (vals1 + vals2) / 2,
+                yerr = abs(vals1 - vals2) / 2,
+                ecolor = color,
+                ls = "none",
+                elinewidth = 3,
+                capsize = 5,
+                capthick = 1.5,
+                zorder = 4)
+
+def errorMarkers(ax: Axes, x: list, vals1: list | None, color1: str | None,
+                 marker1: str, vals2: list | None = None, 
+                 color2: str | None = None, marker2: str | None = None) -> None:
+    """
+    Plot a series of error markers on ax along x at vals1 and optionally vals2 
+    of given colors.
+
+    Args:
+        ax: The axes on which to plot.
+        x: The x-coordinates for the error markers.
+        vals1: The first set of values.
+        color1: The color for the first set of markers.
+        marker1: The marker style for the first set of markers.
+        vals2: The second set of values.
+        color2: The color for the second set of markers.
+        marker2: The marker style for the second set of markers.
+    """
+    for i in range(len(x)):
+        if vals1 is not None and len(vals1[i]) > 0:
+            for val in vals1[i]:
+                ax.plot(x[i], 
+                        val, 
                         color = color1, 
                         markersize = 4, 
                         marker = marker1, 
                         zorder = 4)
-        if vals2[i].size > 0:
-            for j in range(vals2[i].size):
-                ax.plot(x[i], vals2[i][j], 
+
+        if vals2 is not None and len(vals2[i]) > 0:
+            for val in vals2[i]:
+                ax.plot(x[i], 
+                        val, 
                         color = color2, 
                         markersize = 3.5, 
                         markerfacecolor = None, 
                         marker = marker2, 
                         zorder = 4)
 
+def errorLines(ax: Axes, vals1: np.ndarray, vals2: np.ndarray, color: str, 
+               weights: (np.ndarray | None) = None) -> None:
+    """
+    Plot a series of error lines on ax at vals1 and vals2 of given color.
+
+    Args:
+        ax: The axes on which to plot.
+        vals1: The first set of values.
+        color: The color of the error lines.
+        vals2: The second set of values.
+        weights: The weights of the error lines.
+    """
+    # Create grid of points
+    datasetX, subsetX = np.meshgrid(vals1[:, 0], vals2[:, 0], indexing='ij')
+    datasetY, subsetY = np.meshgrid(vals1[:, 1], vals2[:, 1], indexing='ij')
+
+    # Create line segments
+    linesX = np.stack([datasetX, subsetX], axis=-1)
+    linesY = np.stack([datasetY, subsetY], axis=-1)
+    lines = np.stack([linesX, linesY], axis=-1).reshape(-1, 2, 2)
+
+    # Assign weights if not provided
+    if weights is None: 
+        weights = np.ones(len(lines))
+                           
+    # Create LineCollection
+    lines = LineCollection(lines, 
+                           colors=color, 
+                           linewidths=weights.flatten(), 
+                           alpha=0.2)
+    lines.set_capstyle("round")
+    ax.add_collection(lines)
+
 
 # --- Plots --------------------------------------------------------------------
 
 def initialize(color, font: str = "Times New Roman", size: int = 42, 
-               faceColorAx = None, faceColorFig = None) -> None:
+               faceColorAx: (str | None) = None, 
+               faceColorFig: (str | None) = None) -> None:
     """
     Initialize matplotlib settings global parameters for text and background
     
@@ -197,8 +260,9 @@ def initialize(color, font: str = "Times New Roman", size: int = 42,
     else:
         plt.rcParams["axes.facecolor"] = faceColorAx
 
-def scatter(ax, color, dataset=None, subset=None, features=(0, 1), 
-            **parameters):
+def scatter(ax: Axes, color: Color, dataset: (sets.Dataset | None) = None, 
+            subset: (sets.Subset | None) = None, features=(0, 1), 
+            **parameters) -> None:
     """
     Plot a scatterplot of data features on ax
 
@@ -214,7 +278,7 @@ def scatter(ax, color, dataset=None, subset=None, features=(0, 1),
 
     if dataset is None and subset is None:
         raise ValueError("no dataset or subset specified")
-    
+
     if len(features) == 3:
         if dataset is not None:
             ax.scatter(dataset.data[features[0]], 
@@ -250,18 +314,21 @@ def scatter(ax, color, dataset=None, subset=None, features=(0, 1),
                             zorder=4,
                             **parameters)
 
-def parallelCoordinates(ax, color, dataset=None, subset=None, dataLinewidth=0.5, 
-                        subsetLinewidth=1.5, **parameters):
+def parallelCoordinates(ax: Axes, color: Color, 
+                        dataset: (sets.Dataset | None) = None, 
+                        subset: (sets.Subset | None) = None, 
+                        dataLinewidth: float = 0.5, 
+                        subsetLinewidth: float = 1.5, **parameters) -> None:
     """
     Plot a parallel coordinates chart of dataset on ax
 
     Args:
-        ax (matplotlib ax): The axis to plot the parallel coordinates on
-        dataset (pandas DataFrame): The dataset to plot
-        color (Color object): A color object with the color palette to use
-        subset (pandas DataFrame or None, optional): The subset to plot
-        dataLinewidth (float, optional): Linewidth for the main dataset
-        subsetLinewidth (float, optional): Linewidth for the subset
+        ax: The axis to plot the parallel coordinates on
+        dataset: The dataset to plot
+        color: A color object with the color palette to use
+        subset: The subset to plot
+        dataLinewidth: Linewidth for the main dataset
+        subsetLinewidth: Linewidth for the subset
         **parameters: Additional parameters to pass to 
             pd.plotting.parallel_coordinates
 
@@ -288,59 +355,57 @@ def parallelCoordinates(ax, color, dataset=None, subset=None, dataLinewidth=0.5,
                                          alpha=1,
                                          **parameters)
 
-
-def histogram(ax, color, dataset=None, subset=None, numBins=6, **parameters):
+def histogram(ax: Axes, color: Color, dataset: (sets.Dataset | None) = None, 
+              subset: (sets.Subset | None) = None, numBins: int = 6, 
+              **parameters) -> None:
     """
     Plot histograms of each feature side by side on ax with normalized subset 
     and dataset overlapping on common bins
 
     Args:
-        ax (matplotlib ax): The axis to plot the histogram on
-        color (Color object): A color object with the color palette to use
-        dataset (sets.Dataset object, optional): The dataset to plot
-        subset (sets.Subset object, optional): The subset to plot
-        numBins (float): The number of bins to bin the dataset
+        ax: The axis to plot the histogram on
+        color: A color object with the color palette to use
+        dataset: The dataset to plot
+        subset: The subset to plot
+        numBins: The number of bins to bin the dataset
     
     Raises: ValueError: If neither a dataset or subset are provided
     """
     
     if dataset is None and subset is None:
         raise ValueError("No dataset or subset specified")
-    
-    # Check if dataset is provided
+
     if dataset is not None:
         features = dataset.data.columns
-        num_features = len(features)
+        numFeatures = len(features)
         
         # Get the positions of each bar group
-        bar_positions = np.arange(numBins * num_features, step=numBins)
+        barPositions = range(numBins * numFeatures, step=numBins)
         
         for i, feature in enumerate(features):
             # Plot the dataset histogram
-            dataset_hist = np.histogram(dataset.data[feature], bins=numBins)
-            dataset_heights = dataset_hist[0]
+            datasetHist = np.histogram(dataset.data[feature], bins=numBins)
+            datasetHeights = datasetHist[0]
             
             # Adjust bar positions
-            positions = bar_positions[i] + np.arange(numBins)
+            positions = barPositions[i] + np.arange(numBins)
             
-            ax.bar(positions, dataset_heights, width=1, 
+            ax.bar(positions, datasetHeights, width=1, 
                    color=color.palette["green"], alpha=0.5)
-    
-    # Check if subset is provided
     if subset is not None:
         features = subset.data.columns
-        num_features = len(features)
+        numFeatures = len(features)
         
         # Get the positions of each bar group
-        bar_positions = np.arange(numBins * num_features, step=numBins)
+        barPositions = range(numBins * numFeatures, step=numBins)
         
         for i, feature in enumerate(features):
             # Calculate histogram of subset normalized by subset size
-            subset_hist = np.histogram(subset.data[feature], bins=numBins)
-            subset_heights = subset_hist[0] / len(subset.data) * len(dataset.data)
+            subsetHist = np.histogram(subset.data[feature], bins=numBins)
+            subsetHeights = subsetHist[0] / len(subset.data) * len(dataset.data)
             
             # Adjust bar positions
-            positions = bar_positions[i] + np.arange(numBins)
+            positions = barPositions[i] + np.arange(numBins)
             
-            ax.bar(positions, subset_heights, width=1, 
-                   color=color.palette["darkGreen"], alpha=0.5)  # Increase alpha for better visibility
+            ax.bar(positions, subsetHeights, width=1, 
+                   color=color.palette["darkGreen"], alpha=0.5)

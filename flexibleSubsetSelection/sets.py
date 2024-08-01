@@ -2,6 +2,7 @@
 
 # Standard library
 import os
+from typing import Literal
 
 # Third party
 import numpy as np
@@ -85,17 +86,18 @@ class Dataset(Base):
     A class for creating, storing, and processing of datasets for subsetting
     """
 
-    def __init__(self, data: ArrayLike = None, randTypes: str | list = None, 
-                 size: tuple = None, interval: tuple = (1, 5), 
-                 features: list = None, 
-                 seed: int | np.random.Generator = None) -> None:
+    def __init__(self, data: (pd.DataFrame | np.ndarray | None) = None, 
+                 randTypes: (str | list| None) = None, 
+                 size: (tuple | None) = None, interval: tuple = (1, 5), 
+                 features: (list| None) = None, 
+                 seed: (int | np.random.Generator | None) = None) -> None:
         """
         Initialize a dataset with data or by random data generation.
 
         Args:
-            data: The DataFrame or array of the data. 
+            data: The data in pd.DataFrame or np.ndarray. 
             randTypes: The method or methods for random data generation. 
-                Supported methods: "uniform", "binary", "categorical", "normal",
+                Supported methods: "uniform", "binary", "categories", "normal",
                 "multimodal", "skew", "blobs"
             size: The size of the dataset to create for random dataset 
                 generation or the size of the data (num rows, num columns).
@@ -104,7 +106,8 @@ class Dataset(Base):
             seed: The random seed or generator for reproducibility. 
 
         Raises:
-            ValueError: If no data or random generation method is specified.
+            ValueError: If no data or random generation method is specified or
+            if no size of data to generate is specified.
         """
         # Initialize data
         if data is not None:  # initialize with provided data
@@ -114,16 +117,22 @@ class Dataset(Base):
             else:
                 self.data = pd.DataFrame(data)
         elif randTypes is not None:  # initialize with random data generation
-            if isinstance(randTypes, list):
-                self.data = pd.DataFrame({
-                    i: generate.randomData(randType, size, interval, seed) 
-                    for i, randType in enumerate(randTypes)
-                })
+            if size is not None:
+                if isinstance(randTypes, list):
+                    self.data = pd.DataFrame({
+                        i: generate.randomData(randType, size, interval, seed) 
+                        for i, randType in enumerate(randTypes)
+                    })
+                else:
+                    self.data = generate.randomData(randTypes, 
+                                                    size, 
+                                                    interval, 
+                                                    seed)
+                if features is not None:
+                    self.data.columns = features
+                self.size = size
             else:
-                self.data = generate.randomData(randTypes, size, interval, seed)
-            if features is not None:
-                self.data.columns = features
-            self.size = size
+                raise ValueError("No size of data to generate specified.")
         else:
             raise ValueError("No data or random generation method specified.")
 
@@ -157,7 +166,7 @@ class Dataset(Base):
             else:
                 setattr(self, name, preprocessor(self.dataArray))
 
-    def scale(self, interval: tuple = None) -> None:
+    def scale(self, interval: (tuple | None) = None) -> None:
         """
         Scales self.dataArray numpy array based on self.interval tuple
 
@@ -179,16 +188,16 @@ class Dataset(Base):
         self.dataArray = self.dataArray * (interval[1] - interval[0])
         self.dataArray += interval[0]
         
-    def discretize(self, bins: int | ArrayLike, features: list = None, 
-                   strategy: str = 'uniform', array: str = None) -> None:
+    def discretize(self, bins: int | ArrayLike, features: (list | None) = None, 
+                   strategy: Literal["uniform","quantile","kmeans"] = "uniform", 
+                   array: (str | None) = None) -> None:
         """
         Discretize self.dataArray into bins.
 
         Arg: 
             bins: Number of bins to use, bins in each feature, or bin edges.
             features: The features to use for the binning
-            strategy: sklearn KBinsDiscretizer strategy to use from 'uniform', 
-                'quantile', or 'kmeans'.
+            strategy: sklearn KBinsDiscretizer strategy to use.
             array: The array to assignt he result to.
         
         Raises:
@@ -209,8 +218,8 @@ class Dataset(Base):
         setattr(self, array, discretizer.fit_transform(selected))
         self.bins = bins
         
-    def encode(self, features: list = None, dimensions: int = 1, 
-               array: str = None) -> None:
+    def encode(self, features: (list | None) = None, dimensions: int = 1, 
+               array: (str | None) = None) -> None:
         """
         One hot encodes self.dataArray with sklearn OneHotEncoder assuming data 
         is discretized.
@@ -263,8 +272,9 @@ class Subset(Base):
     A class for creating, storing, and handling subsets of datasets.
     """
 
-    def __init__(self, dataset: Dataset, z: ArrayLike, solveTime: float = None,
-                 loss: float = None) -> None:
+    def __init__(self, dataset: Dataset, z: ArrayLike, 
+                 solveTime: (float | None) = None,
+                 loss: (float | None) = None) -> None:
         """
         Initialize a subset with a Dataset object and the indicator vector z.
 

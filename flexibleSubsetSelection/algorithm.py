@@ -13,7 +13,7 @@ import ot
 # --- Utility ------------------------------------------------------------------
 
 def randomSample(datasetSize: tuple, subsetSize: int, 
-                 seed: int | np.random.Generator = None):
+                 seed: (int | np.random.Generator | None) = None):
     """
     Randomly sample from dataset by generating random indices to create subset
 
@@ -46,7 +46,8 @@ def createEnvironment(outputFlag: int = 0):
     
     return environment
 
-def optimize(objective, constraints, environment, solver, log_file='gurobi_log.txt', verbose=False):
+def optimize(objective, constraints, environment, solver, 
+             log_file='gurobi_log.txt', verbose=False):
     """
     Sets up a cvxpy problem with given objective and constraints and solves it 
     using the specified solver.
@@ -99,7 +100,8 @@ def bestOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
 
 
 def averageOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
-                    maxIterations=None, seed=None, verbose=False, selectBy="row"):
+                    maxIterations=None, seed=None, verbose=False, 
+                    selectBy="row"):
 
     if maxIterations is None:
         maxIterations = dataset.size[0]

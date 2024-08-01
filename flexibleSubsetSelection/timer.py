@@ -1,3 +1,4 @@
+# Based on https://realpython.com/python-timer/
 # --- Imports ------------------------------------------------------------------
 
 # Standard library
@@ -18,7 +19,7 @@ class Timer(ContextDecorator):
 
         self._startTime = time.perf_counter()
 
-    def stop(self) -> float:
+    def stop(self) -> None:
         """Stop the timer, and return the elapsed time"""
         if self._startTime is None:
             raise TimerError(f"Timer is not running. Use .start() to start it")
