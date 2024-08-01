@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # Local files
-from . import sets
+from .sets import Dataset, Subset
 
 
 # --- Loss Function ------------------------------------------------------------
@@ -51,7 +51,7 @@ class MultiCriterion():
         # Generate the combined objective function
         self.calculate = partial(self._loss)
 
-    def _loss(self, dataset: sets.Dataset, z: ArrayLike) -> float:
+    def _loss(self, dataset: Dataset, z: ArrayLike) -> float:
         """
         Compute the overall loss function by evaluating each objective function
         with its corresponding parameters and combining them with weights.
@@ -131,7 +131,7 @@ class UniCriterion():
         self.selectBy = selectBy
         self.parameters = parameters
 
-    def calculate(self, dataset: sets.Dataset, z: ArrayLike) -> float:
+    def calculate(self, dataset: Dataset, z: ArrayLike) -> float:
         """
         Compute the loss by evaluating the objective with its parameters on the 
         selected subset.

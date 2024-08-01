@@ -8,8 +8,8 @@ import csv
 import gurobipy as gp
 
 # Local files
-from . import loss
-from . import sets
+from .loss import UniCriterion, MultiCriterion
+from .sets import Dataset, Subset
 from .timer import Timer
 
 
@@ -21,9 +21,7 @@ class Solver():
     solving algorithm and loss function, applied to calculate a subset.
     """
     def __init__(self, algorithm: Callable, 
-                 lossFunction: (loss.UniCriterion | 
-                                loss.MultiCriterion | 
-                                None) = None,
+                 lossFunction: (UniCriterion | MultiCriterion | None) = None,
                  logPath: str = "../data/solverLog.csv") -> None:
         """
         Initialize a subset selection solver with a solve algorithm and, 
@@ -48,7 +46,7 @@ class Solver():
         except FileExistsError:
             pass
 
-    def solve(self, dataset: sets.Dataset, **parameters) -> sets.Subset:
+    def solve(self, dataset: Dataset, **parameters) -> Subset:
         """
         Solve for the optimal subset with the algorithm and loss function for 
         the specified dataset.
@@ -62,7 +60,7 @@ class Solver():
         with Timer() as timer:
             z, loss = self.algorithm(dataset, self.lossFunction, **parameters)
         
-        subset = sets.Subset(dataset, z, timer.elapsedTime, loss)
+        subset = Subset(dataset, z, timer.elapsedTime, loss)
 
         self.log(dataset.size, subset.size, self.lossFunction, 
                  self.algorithm.__name__, timer.elapsedTime, loss)
@@ -72,7 +70,7 @@ class Solver():
         return subset
 
     def log(self, datasetSize: tuple, subsetSize: tuple, 
-            lossFunction: loss.UniCriterion | loss.MultiCriterion, 
+            lossFunction: (UniCriterion | MultiCriterion), 
             algorithm: str, computationTime: float, loss: float):
 
         # Write log entry to the log file

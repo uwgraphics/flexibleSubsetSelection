@@ -19,7 +19,7 @@ from . import generate
 
 # --- Dataset and Subset Classes -----------------------------------------------
 
-class Base:
+class Set:
     """
     Base class for Dataset and Subset providing shared save and load functions.
     """
@@ -81,7 +81,7 @@ class Base:
             print(f"Error loading file: {e}")
 
 
-class Dataset(Base):
+class Dataset(Set):
     """
     A class for creating, storing, and processing of datasets for subsetting
     """
@@ -188,7 +188,8 @@ class Dataset(Base):
         self.dataArray = self.dataArray * (interval[1] - interval[0])
         self.dataArray += interval[0]
         
-    def discretize(self, bins: int | ArrayLike, features: (list | None) = None, 
+    def discretize(self, bins: (int | ArrayLike), 
+                   features: (list | None) = None, 
                    strategy: Literal["uniform","quantile","kmeans"] = "uniform", 
                    array: (str | None) = None) -> None:
         """
@@ -267,7 +268,7 @@ class Dataset(Base):
         return (f"Dataset with {self.size[0]} rows and {len(self.features)} "
                 f"features: {self.features}")
 
-class Subset(Base):
+class Subset(Set):
     """
     A class for creating, storing, and handling subsets of datasets.
     """

@@ -9,6 +9,7 @@ general optimization solving methods such as greedy algorithms or MILP solvers.
 from .sets import Dataset, Subset              # Data management classes
 from .loss import UniCriterion, MultiCriterion # Loss function classes
 from .solver import Solver                     # Solver class
+from .color import Color                       # Color class
 
 # Import sub-level component functions
 from . import (
