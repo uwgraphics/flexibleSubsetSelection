@@ -219,18 +219,21 @@ def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None,
         if not hasattr(ax, "zaxis"):
             raise ValueError("3D data is specified but axis is not 3D.")
         initializePane3D(ax, color["grey"])
+        data = []
+        colors = []
         if dataset is not None:
-            ax.scatter(dataset.data[features[0]], 
-                       dataset.data[features[1]], 
-                       dataset.data[features[2]], 
-                       color = color["green"], 
-                       **parameters)
-        if subset is not None: 
-            ax.scatter(subset.data[features[0]], 
-                       subset.data[features[1]], 
-                       subset.data[features[2]], 
-                       color = color["darkGreen"], 
-                       **parameters)
+            data.append(dataset.data)
+            colors.extend([color["green"]] * len(dataset.data))
+        if subset is not None:
+            data.append(subset.data)
+            colors.extend([color["darkGreen"]] * len(subset.data))
+        
+        data = np.concatenate(data, axis=0)
+        ax.scatter(data[:, features[0]], 
+                   data[:, features[1]], 
+                   data[:, features[2]], 
+                   c=colors, 
+                   **parameters)
     else:
         if dataset is not None:
             sns.scatterplot(data = dataset.data, 

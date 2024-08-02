@@ -1,10 +1,12 @@
 # --- Imports ------------------------------------------------------------------
 
 # Standard library
+from collections import Counter
 from typing import Callable
 
 # Third party
 import ot
+from ott.geometry import costs, pointcloud
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -87,8 +89,8 @@ def earthMoversDistance(subset: np.ndarray, dataset: np.ndarray) -> float:
     """
     return ot.emd2([], [], ot.dist(subset, dataset))
 
-def sinkhornDistance(distances: np.ndarray, reg: float = 0.1, 
-                     verbose: bool = False) -> float:
+def sinkhornDistance(distances: np.ndarray, datasetLength, subsetLength, 
+                     reg: float = 0.1, verbose: bool = False) -> float:
     """
     Computes the Sinkhorn distance using the POT library.
 
@@ -100,13 +102,10 @@ def sinkhornDistance(distances: np.ndarray, reg: float = 0.1,
     Returns:
         float: Sinkhorn distance.
     """
-    n, m = subset.shape[0], dataset.shape[0]
-    distanceMatrix = compute_distance_matrix(subset, dataset)
-    print("Computed Distance Matrix")
-
-    return ot.sinkhorn2(np.ones(n) / n, 
-                        np.ones(m) / m, 
-                        distanceMatrix, 
+    print(distances.shape)
+    return ot.sinkhorn2(np.ones(datasetLength) / datasetLength, 
+                        np.ones(subsetLength) / subsetLength, 
+                        distances, 
                         reg,
                         stopThr=1e-05,
                         verbose=verbose)
@@ -154,3 +153,14 @@ def emdCategorical(subset, dataset, features, categorical, categories):
         emd_loss = ot.emd2([], [], ot.dist(subset_data, dataset_data))
         emd_losses.append(emd_loss)
     return emd_losses
+
+def entropy(array: np.ndarray) -> float:
+    counts = Counter(map(tuple, array))
+    total = sum(counts.values())
+    probabilities = np.array(list(counts.values()))/total
+    return np.sum(probabilities * np.log(probabilities))
+
+def sinkhorn(subset, fullData, solveFunction):
+    geometry = pointcloud.PointCloud(fullData, subset)
+    sinkhornOutput = solveFunction(geometry)
+    return sinkhornOutput.reg_ot_cost
