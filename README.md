@@ -1,7 +1,16 @@
 # Flexible Subset Selection for Data Visualization
 
 ## Abstract
-Subset selection is crucial in data visualization for decluttering, summarizing, and emphasizing key insights. This project proposes a unified approach using multi-criterion optimization for flexible subset selection strategies. By defining objective functions, we tailor subsets to meet specific visualization needs, leveraging both traditional and innovative selection methods. General-purpose solvers facilitate rapid prototyping, demonstrated through realistic examples of scatterplot decluttering, dataset summarization, and exemplar highlighting.
+Subset selection has many uses in data visualization, but each use often has a specialized strategy or implementation.
+We propose a general strategy for organizing, designing, and prototyping subset selection for visualization by casting the problem in terms of multi-criterion optimization. 
+This strategy allows us to select subsets for typical uses in data visualization.
+We can incorporate both standard and novel selection approaches using this strategy. 
+It also provides several advantages. 
+Objective functions encode criteria, representing the desired properties of a subset. 
+The objectives can be selected, blended and tuned to meet the needs of particular visualizations. 
+General purpose solvers can be used as an effective prototyping strategy. 
+We applied the proposed strategy to example situations of designing visualizations using realistic example datasets, objectives, and charts. 
+These demonstrate the effectiveness and flexibility of the strategy in common visualization uses such as decluttering scatterplots, summarizing datasets, or highlighting exemplars.
 
 # Flexible Subset Selection Python Package
 
