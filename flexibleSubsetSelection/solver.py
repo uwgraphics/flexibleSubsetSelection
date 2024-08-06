@@ -1,16 +1,20 @@
 # --- Imports ------------------------------------------------------------------
 
 # Standard library
-from typing import Callable
 import csv
+import logging
+from typing import Callable
 
 # Third party
-import gurobipy as gp
+import numpy as np
 
 # Local files
 from .loss import UniCriterion, MultiCriterion
 from .sets import Dataset, Subset
 from .timer import Timer
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 
 # --- Solver -------------------------------------------------------------------
@@ -22,7 +26,7 @@ class Solver():
     """
     def __init__(self, algorithm: Callable, 
                  lossFunction: (UniCriterion | MultiCriterion | None) = None,
-                 logPath: str = "../data/solverLog.csv") -> None:
+                 savePath: str = "../data/solverData.csv") -> None:
         """
         Initialize a subset selection solver with a solve algorithm and, 
         optionally, a loss function.
@@ -30,21 +34,26 @@ class Solver():
         Args:
             algorithm: The algorithm function to find the subset.
             loss: The loss function class object.
-            logPath: The path to the solver log file.
+            savePath: The path to the solver save file.
         """
+        logger.debug("Initializing Solver with algorithm: %s, lossFunction: %s, savePath: %s", 
+                algorithm.__name__, lossFunction, savePath)
+    
         self.algorithm = algorithm
         self.lossFunction = lossFunction
-        self.logPath = logPath
+        self.savePath = savePath
 
-        # Initialize the log file with headers if it doesn't exist
+        # Initialize the data file with headers if it doesn't exist
         try:
-            with open(self.logPath, 'x', newline='') as fp:
+            with open(self.savePath, 'x', newline='') as fp:
                 writer = csv.writer(fp)
                 writer.writerow(["Loss Function", "Algorithm", "Dataset Length", 
                                  "Dataset Width", "Subset Length", 
                                  "Computation Time", "Loss"])
         except FileExistsError:
-            pass
+            logger.debug("Log file already exists at %s", self.savePath)
+
+        logger.info("Initialized a '%s' solver.", algorithm.__name__)
 
     def solve(self, dataset: Dataset, **parameters) -> Subset:
         """
@@ -56,26 +65,32 @@ class Solver():
             **parameters: Additional parameters for the algorithm function.
 
         Returns: The resulting subset of the selection solved for.
-        """
+        """            
         with Timer() as timer:
             z, loss = self.algorithm(dataset, self.lossFunction, **parameters)
         
+        logger.info(f"Selected subset with '%s' and '%s' in %ss with %s loss.", 
+                    self.algorithm.__name__,
+                    self.lossFunction,
+                    np.round(timer.elapsedTime, 2),
+                    loss)
+
         subset = Subset(dataset, z, timer.elapsedTime, loss)
 
-        self.log(dataset.size, subset.size, self.lossFunction, 
+        self.save(dataset.size, subset.size, self.lossFunction, 
                  self.algorithm.__name__, timer.elapsedTime, loss)
-
-        print(f"Solved for {subset}.")
 
         return subset
 
-    def log(self, datasetSize: tuple, subsetSize: tuple, 
+    def save(self, datasetSize: tuple, subsetSize: tuple, 
             lossFunction: (UniCriterion | MultiCriterion), 
             algorithm: str, computationTime: float, loss: float):
 
-        # Write log entry to the log file
-        with open(self.logPath, 'a', newline='') as fp:
+        # Write performance data to the save file
+        with open(self.savePath, 'a', newline='') as fp:
             writer = csv.writer(fp)
             writer.writerow([str(lossFunction), algorithm, datasetSize[0], 
                              datasetSize[1], subsetSize[0], computationTime, 
                              loss])
+
+        logger.info(f"Saved solver performance data to %s.", self.savePath)

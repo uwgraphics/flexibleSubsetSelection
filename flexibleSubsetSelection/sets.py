@@ -1,7 +1,8 @@
 # --- Imports ------------------------------------------------------------------
 
 # Standard library
-import os
+import logging
+from pathlib import Path
 from typing import Literal
 
 # Third party
@@ -10,11 +11,13 @@ from numpy.typing import ArrayLike
 
 import pandas as pd
 import pickle
-
 from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
 # Local files
 from . import generate
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 
 # --- Dataset and Subset Classes -----------------------------------------------
@@ -24,8 +27,8 @@ class Set:
     Base class for Dataset and Subset providing shared save and load functions.
     """
     
-    def save(self, name: str, fileType: str = 'pickle', 
-             directory: str = '../data', index: bool = False) -> None:
+    def save(self, name: str, fileType: str = "pickle", 
+             directory: (str | Path) = "../data", index: bool = False) -> None:
         """
         Saves self.data as a file.
 
@@ -38,24 +41,25 @@ class Set:
         Raises:
             ValueError: If an unsupported file type is specified.
         """
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        path = Path(directory)
+        path.mkdir(parents=True, exist_ok=True)
+        filePath = path / f"{name}.{fileType}"
 
-        filePath = os.path.join(directory, f"{name}.{fileType}")
-        
         try:
             if fileType == "pickle":
-                with open(filePath, 'wb') as f:
+                with open(filePath, "wb") as f:
                     pickle.dump(self.data, f)
+                logger.info(f"Data successfully saved at '%s'.", filePath)
             elif fileType == "csv":
                 self.data.to_csv(filePath, index=index)
+                logger.info(f"Data successfully saved at '%s'.", filePath)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}.")
         except Exception as e:
-            print(f"Error saving file: {e}")
+            logger.exception("Error saving file", e)
 
-    def load(self, name: str, fileType: str = 'pickle', 
-             directory: str = '../data') -> None:
+    def load(self, name: str, fileType: str = "pickle",  
+             directory: (str | Path) = "../data") -> None:
         """
         Loads from a file into self.data.
 
@@ -63,33 +67,36 @@ class Set:
             name: The name of the file.
             fileType: The type of file (pickle or csv).
             directory: Directory to load the file from.
-        
+
         Raises:
             ValueError: If an unsupported file type is specified.
         """
-        filePath = os.path.join(directory, f"{name}.{fileType}")
-        
+        path = Path(directory)
+        filePath = path / f"{name}.{fileType}"
+
         try:
             if fileType == "pickle":
-                with open(filePath, 'rb') as f:
+                with open(filePath, "rb") as f:
                     self.data = pickle.load(f)
+                logger.info(f"Data successfully loaded from '%s'.", filePath)
             elif fileType == "csv":
                 self.data = pd.read_csv(filePath)
+                logger.info(f"Data successfully loaded from '%s'.", filePath)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}.")
         except Exception as e:
-            print(f"Error loading file: {e}")
+            logger.exception("Error loading file", e)
 
 
 class Dataset(Set):
     """
-    A class for creating, storing, and processing of datasets for subsetting
+    A class for creating, storing, and processing of datasets for subsetting.
     """
 
     def __init__(self, data: (pd.DataFrame | np.ndarray | None) = None, 
-                 randTypes: (str | list| None) = None, 
+                 randTypes: (str | list | None) = None, 
                  size: (tuple | None) = None, interval: tuple = (1, 5), 
-                 features: (list| None) = None, 
+                 features: (list | None) = None, 
                  seed: (int | np.random.Generator | None) = None) -> None:
         """
         Initialize a dataset with data or by random data generation.
@@ -146,6 +153,7 @@ class Dataset(Set):
         self.dataArray = self.data[self.features].to_numpy()
         self.indices = {feature: i for i, feature in enumerate(self.features)}
         self.interval = interval
+        logger.info("%s created.", self)
 
     def preprocess(self, **parameters) -> None:
         """
@@ -160,11 +168,15 @@ class Dataset(Set):
                 dictionary of additional parameters.
         """
         for name, preprocessor in parameters.items():
-            if isinstance(preprocessor, tuple): # with preprocessor parameters
-                preprocessor, parameters = preprocessor
-                setattr(self, name, preprocessor(self.dataArray, **parameters))
-            else:
-                setattr(self, name, preprocessor(self.dataArray))
+            try:
+                if isinstance(preprocessor, tuple): # with parameters
+                    func, params = preprocessor
+                    setattr(self, name, func(self.dataArray, **params))
+                else:
+                    setattr(self, name, preprocessor(self.dataArray))
+                logger.info(f"Data preprocessed with function '%s'.", name)
+            except Exception as e:
+                logger.exception("Error applying function '%s'.", name)
 
     def scale(self, interval: (tuple | None) = None) -> None:
         """
@@ -187,6 +199,7 @@ class Dataset(Set):
         self.dataArray = (self.dataArray - minVals) / rangeVals
         self.dataArray = self.dataArray * (interval[1] - interval[0])
         self.dataArray += interval[0]
+        logger.info("Data scaled to %s.", interval)
         
     def discretize(self, bins: (int | ArrayLike), 
                    features: (list | None) = None, 
@@ -210,14 +223,19 @@ class Dataset(Set):
             array = "dataArray"
 
         # Gets specified features
-        indices = [self.indices[feature] for feature in features]
+        try:
+            indices = [self.indices[feature] for feature in features]
+        except KeyError as e:
+            logger.exception("Feature not found in indices.")
+        
         selected = self.dataArray[:, indices]
         discretizer = KBinsDiscretizer(n_bins = bins, 
-                                       encode = 'ordinal', 
+                                       encode = "ordinal", 
                                        strategy = strategy)
 
         setattr(self, array, discretizer.fit_transform(selected))
         self.bins = bins
+        logger.info("%s discretized by %s with %s bins.", array, strategy, bins)
         
     def encode(self, features: (list | None) = None, dimensions: int = 1, 
                array: (str | None) = None) -> None:
@@ -252,6 +270,7 @@ class Dataset(Set):
         mask = np.ones(self.dataArray.shape[1], dtype=bool)
         mask[indices] = False
         setattr(self, array, np.hstack((self.dataArray[:, mask], encoded)))
+        logger.info("Data one-hot encoded in '%s'", array)
 
     def __repr__(self) -> str:
         """
@@ -288,11 +307,7 @@ class Subset(Set):
 
         Raises:
             ValueError: If length of z does not match the length of dataset.
-            TypeError: If dataset is not an instance of Dataset.
         """
-        if not isinstance(dataset, Dataset):
-            raise TypeError("Dataset must be an instance of Dataset class.")
-        
         if len(z) != dataset.size[0]:
             raise ValueError("Length of z must match the length of dataset.")
 
@@ -305,6 +320,7 @@ class Subset(Set):
         self.data = dataset.data[z == 1].copy()  # subset of the full data
         self.solveTime = solveTime
         self.loss = loss
+        logger.info("Created %s.", self)
 
     def __repr__(self) -> str:
         """
@@ -316,7 +332,7 @@ class Subset(Set):
         if self.loss is not None:
             string = ", ".join(string, f"loss={round(self.loss, 4)})")
         return string
-    
+
     def __str__(self) -> str:
         """
         Return a user-friendly string representation of the Subset object.

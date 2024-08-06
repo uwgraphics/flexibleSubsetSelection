@@ -1,0 +1,16 @@
+Loss Function,Algorithm,Dataset Length,Dataset Width,Subset Length,Computation Time,Loss
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07317258277907968,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07850275002419949,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.08522158302366734,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07728620758280158,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07322066696360707,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07752608275040984,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07825316581875086,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.0774826668202877,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.08167708432301879,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07435220899060369,0.0
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,0.07715724967420101,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,0.028571959119290113,-83.00160578686646
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,8,0.09449754096567631,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,0.03406029101461172,-82.66069589660857
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,0.16028858395293355,-84.45664299596237

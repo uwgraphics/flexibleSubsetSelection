@@ -8,3 +8,4 @@ cvxpy
 gurobipy
 pot
 jupyter-book
+ott-jax

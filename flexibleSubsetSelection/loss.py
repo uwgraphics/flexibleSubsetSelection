@@ -2,6 +2,7 @@
 
 # Standard library
 from functools import partial
+import logging
 from typing import Any, Callable, Dict, List
 
 # Third party
@@ -10,6 +11,9 @@ from numpy.typing import ArrayLike
 
 # Local files
 from .sets import Dataset, Subset
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 
 # --- Loss Function ------------------------------------------------------------
@@ -50,6 +54,10 @@ class MultiCriterion():
 
         # Generate the combined objective function
         self.calculate = partial(self._loss)
+
+        logger.debug("Initialized a multi-criterion loss function with "
+                     "objectives: %s, parameters: %s, and weights: %s", 
+                     objectives, parameters, weights)
 
     def _loss(self, dataset: Dataset, z: ArrayLike) -> float:
         """
@@ -130,6 +138,12 @@ class UniCriterion():
         self.solveArray = solveArray
         self.selectBy = selectBy
         self.parameters = parameters
+
+        logger.info("Initialized a uni-criterion loss function with "
+                    "objective: %s, solve array: %s, selection method: %s, "
+                    "and parameters: %s", 
+                    objective.__name__, solveArray, selectBy, parameters)
+
 
     def calculate(self, dataset: Dataset, z: ArrayLike) -> float:
         """

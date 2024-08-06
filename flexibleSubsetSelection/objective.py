@@ -6,7 +6,7 @@ from typing import Callable
 
 # Third party
 import ot
-from ott.geometry import costs, pointcloud
+from ott.geometry import pointcloud
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -95,14 +95,13 @@ def sinkhornDistance(distances: np.ndarray, datasetLength, subsetLength,
     Computes the Sinkhorn distance using the POT library.
 
     Args:
-        distances (np.ndarray): distance matrix .
-        reg (float, optional): Regularization parameter. Defaults to 0.1.
-        verbose (bool, optional): If True, print progress messages. Defaults to False.
+        distances: distance matrix .
+        reg: Regularization parameter.
+        verbose: If True, print progress messages. Defaults to False.
 
     Returns:
         float: Sinkhorn distance.
     """
-    print(distances.shape)
     return ot.sinkhorn2(np.ones(datasetLength) / datasetLength, 
                         np.ones(subsetLength) / subsetLength, 
                         distances, 
@@ -130,8 +129,8 @@ def clusterCenters(array: np.ndarray, clusterCenters: np.ndarray) -> float:
     each cluster center.
 
     Args:
-        array (np.ndarray): Array of datapoints in the set.
-        clusterCenters (np.ndarray): Array of cluster centers.
+        array: Array of datapoints in the set.
+        clusterCenters: Array of cluster centers.
 
     Returns: The sum of distances to the nearest point for each cluster center.
     """
