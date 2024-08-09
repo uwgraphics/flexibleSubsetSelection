@@ -70,3 +70,9 @@ Uni-criterion: discreteCoverage,greedySwap,1000,10,10,0.10966670885682106,-53.0
 Uni-criterion: clusterCenters,worstOfRandom,1000,2,10,0.029493208974599838,11.847265520187392
 Uni-criterion: clusterCenters,bestOfRandom,1000,2,10,0.02857504179701209,2.789513312747127
 Uni-criterion: clusterCenters,greedySwap,1000,2,10,0.13878262508660555,0.7724079671652213
+"Uni-criterion: preserveMetric, mean",worstOfRandom,1000,10,10,0.02800250006839633,9.50451408816041
+"Uni-criterion: preserveMetric, mean",bestOfRandom,1000,10,10,0.02774458285421133,1.4512032863232234
+"Uni-criterion: preserveMetric, mean",greedySwap,1000,10,10,0.13165183318778872,0.5215736802170967
+"Uni-criterion: preserveMetric, mean",worstOfRandom,1000,10,10,0.031927124597132206,9.503260009237106
+"Uni-criterion: preserveMetric, mean",bestOfRandom,1000,10,10,0.027917416766285896,1.460277122561562
+"Uni-criterion: preserveMetric, mean",greedySwap,1000,10,10,0.132963459007442,0.5640211475433015
