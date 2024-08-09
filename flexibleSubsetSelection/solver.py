@@ -12,9 +12,10 @@ import numpy as np
 from .loss import UniCriterion, MultiCriterion
 from .sets import Dataset, Subset
 from .timer import Timer
+from . import logger
 
 # Setup logger
-logger = logging.getLogger(__name__)
+log = logger.setup(__name__)
 
 
 # --- Solver -------------------------------------------------------------------
@@ -36,7 +37,7 @@ class Solver():
             loss: The loss function class object.
             savePath: The path to the solver save file.
         """
-        logger.debug("Initializing Solver with algorithm: %s, lossFunction: %s, savePath: %s", 
+        log.debug("Initializing Solver with algorithm: %s, lossFunction: %s, savePath: %s", 
                 algorithm.__name__, lossFunction, savePath)
     
         self.algorithm = algorithm
@@ -51,9 +52,9 @@ class Solver():
                                  "Dataset Width", "Subset Length", 
                                  "Computation Time", "Loss"])
         except FileExistsError:
-            logger.debug("Log file already exists at %s", self.savePath)
+            log.debug("Log file already exists at %s", self.savePath)
 
-        logger.info("Initialized a '%s' solver.", algorithm.__name__)
+        log.info("Initialized a '%s' solver.", algorithm.__name__)
 
     def solve(self, dataset: Dataset, **parameters) -> Subset:
         """
@@ -69,7 +70,7 @@ class Solver():
         with Timer() as timer:
             z, loss = self.algorithm(dataset, self.lossFunction, **parameters)
         
-        logger.info(f"Selected subset with '%s' and '%s' in %ss with %s loss.", 
+        log.info(f"Selected subset with '%s' and '%s' in %ss with %s loss.", 
                     self.algorithm.__name__,
                     self.lossFunction,
                     np.round(timer.elapsedTime, 2),
@@ -93,4 +94,4 @@ class Solver():
                              datasetSize[1], subsetSize[0], computationTime, 
                              loss])
 
-        logger.info(f"Saved solver performance data to %s.", self.savePath)
+        log.info(f"Saved solver performance data to %s.", self.savePath)

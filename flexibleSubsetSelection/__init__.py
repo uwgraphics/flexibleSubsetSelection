@@ -16,5 +16,6 @@ from . import (
     plot,      # Plotting functions for datasets and subsets
     algorithm, # Algorithms for subset selection
     objective, # Objective functions for defining criteria
-    metric     # Data metric functions
+    metric,    # Data metric functions
+    logger     # Logging information to console or files
 )

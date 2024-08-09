@@ -163,3 +163,35 @@ def sinkhorn(subset, fullData, solveFunction):
     geometry = pointcloud.PointCloud(fullData, subset)
     sinkhornOutput = solveFunction(geometry)
     return sinkhornOutput.reg_ot_cost
+
+
+import numpy as np
+from scipy.spatial import distance
+
+def compute_cost_matrix_chunked(dataset_array, subset_array, chunk_size=1000):
+    num_dataset = dataset_array.shape[0]
+    num_subset = subset_array.shape[0]
+    C = np.zeros((num_dataset, num_subset), dtype=np.float32)
+    
+    # Compute distance in chunks
+    for i in range(0, num_dataset, chunk_size):
+        end_i = min(i + chunk_size, num_dataset)
+        C[i:end_i, :] = distance.cdist(dataset_array[i:end_i], subset_array, metric='euclidean')
+    
+    return C
+
+# Compute the cost matrix in chunks
+
+def potSinkhorn(subset, fullData):
+    C = compute_cost_matrix_chunked(fullData, subset, chunk_size=1000)
+    C = C / np.max(C)
+
+    reg = 0.01  # Regularization parameter
+    a = np.ones(len(fullData)) / len(fullData)
+    b = np.ones(len(subset)) / len(subset)
+
+    transport_plan = ot.bregman.sinkhorn(a, b, C, reg, 
+                                         method="greenkhorn", 
+                                         stopThr=1e-3, 
+                                         verbose=True)
+    return np.sum(transport_plan * C)

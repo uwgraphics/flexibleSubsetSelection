@@ -229,10 +229,10 @@ def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None,
             colors.extend([color["darkGreen"]] * len(subset.data))
         
         data = np.concatenate(data, axis=0)
-        ax.scatter(data[:, features[0]], 
-                   data[:, features[1]], 
-                   data[:, features[2]], 
-                   c=colors, 
+        ax.scatter(data[:, 0], 
+                   data[:, 1], 
+                   data[:, 2], 
+                   c=colors,
                    **parameters)
     else:
         if dataset is not None:
@@ -318,7 +318,7 @@ def histogram(ax: Axes, color: Color, dataset: (Dataset | None) = None,
         numFeatures = len(features)
         
         # Get the positions of each bar group
-        barPositions = range(numBins * numFeatures, step=numBins)
+        barPositions = range(0, numBins * numFeatures, numBins)
         
         for i, feature in enumerate(features):
             # Plot the dataset histogram
@@ -335,7 +335,7 @@ def histogram(ax: Axes, color: Color, dataset: (Dataset | None) = None,
         numFeatures = len(features)
         
         # Get the positions of each bar group
-        barPositions = range(numBins * numFeatures, step=numBins)
+        barPositions = range(0, numBins * numFeatures, numBins)
         
         for i, feature in enumerate(features):
             # Calculate histogram of subset normalized by subset size

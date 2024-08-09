@@ -15,10 +15,10 @@ from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
 # Local files
 from . import generate
+from . import logger
 
 # Setup logger
-logger = logging.getLogger(__name__)
-
+log = logger.setup(name=__name__)
 
 # --- Dataset and Subset Classes -----------------------------------------------
 
@@ -49,14 +49,14 @@ class Set:
             if fileType == "pickle":
                 with open(filePath, "wb") as f:
                     pickle.dump(self.data, f)
-                logger.info(f"Data successfully saved at '%s'.", filePath)
+                log.info(f"Data successfully saved at '%s'.", filePath)
             elif fileType == "csv":
                 self.data.to_csv(filePath, index=index)
-                logger.info(f"Data successfully saved at '%s'.", filePath)
+                log.info(f"Data successfully saved at '%s'.", filePath)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}.")
         except Exception as e:
-            logger.exception("Error saving file", e)
+            log.exception("Error saving file")
 
     def load(self, name: str, fileType: str = "pickle",  
              directory: (str | Path) = "../data") -> None:
@@ -78,14 +78,14 @@ class Set:
             if fileType == "pickle":
                 with open(filePath, "rb") as f:
                     self.data = pickle.load(f)
-                logger.info(f"Data successfully loaded from '%s'.", filePath)
+                log.info(f"Data successfully loaded from '%s'.", filePath)
             elif fileType == "csv":
                 self.data = pd.read_csv(filePath)
-                logger.info(f"Data successfully loaded from '%s'.", filePath)
+                log.info(f"Data successfully loaded from '%s'.", filePath)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}.")
         except Exception as e:
-            logger.exception("Error loading file", e)
+            log.exception("Error loading file")
 
 
 class Dataset(Set):
@@ -153,7 +153,7 @@ class Dataset(Set):
         self.dataArray = self.data[self.features].to_numpy()
         self.indices = {feature: i for i, feature in enumerate(self.features)}
         self.interval = interval
-        logger.info("%s created.", self)
+        log.info("%s created.", self)
 
     def preprocess(self, **parameters) -> None:
         """
@@ -174,9 +174,9 @@ class Dataset(Set):
                     setattr(self, name, func(self.dataArray, **params))
                 else:
                     setattr(self, name, preprocessor(self.dataArray))
-                logger.info(f"Data preprocessed with function '%s'.", name)
+                log.info(f"Data preprocessed with function '%s'.", name)
             except Exception as e:
-                logger.exception("Error applying function '%s'.", name)
+                log.exception("Error applying function '%s'.", name)
 
     def scale(self, interval: (tuple | None) = None) -> None:
         """
@@ -199,7 +199,7 @@ class Dataset(Set):
         self.dataArray = (self.dataArray - minVals) / rangeVals
         self.dataArray = self.dataArray * (interval[1] - interval[0])
         self.dataArray += interval[0]
-        logger.info("Data scaled to %s.", interval)
+        log.info("Data scaled to %s.", interval)
         
     def discretize(self, bins: (int | ArrayLike), 
                    features: (list | None) = None, 
@@ -226,7 +226,7 @@ class Dataset(Set):
         try:
             indices = [self.indices[feature] for feature in features]
         except KeyError as e:
-            logger.exception("Feature not found in indices.")
+            log.exception("Feature not found in indices.")
         
         selected = self.dataArray[:, indices]
         discretizer = KBinsDiscretizer(n_bins = bins, 
@@ -235,7 +235,7 @@ class Dataset(Set):
 
         setattr(self, array, discretizer.fit_transform(selected))
         self.bins = bins
-        logger.info("%s discretized by %s with %s bins.", array, strategy, bins)
+        log.info("%s discretized by %s with %s bins.", array, strategy, bins)
         
     def encode(self, features: (list | None) = None, dimensions: int = 1, 
                array: (str | None) = None) -> None:
@@ -270,7 +270,7 @@ class Dataset(Set):
         mask = np.ones(self.dataArray.shape[1], dtype=bool)
         mask[indices] = False
         setattr(self, array, np.hstack((self.dataArray[:, mask], encoded)))
-        logger.info("Data one-hot encoded in '%s'", array)
+        log.info("Data one-hot encoded in '%s'", array)
 
     def __repr__(self) -> str:
         """
@@ -320,7 +320,7 @@ class Subset(Set):
         self.data = dataset.data[z == 1].copy()  # subset of the full data
         self.solveTime = solveTime
         self.loss = loss
-        logger.info("Created %s.", self)
+        log.info("Created %s.", self)
 
     def __repr__(self) -> str:
         """

@@ -11,9 +11,10 @@ from numpy.typing import ArrayLike
 
 # Local files
 from .sets import Dataset, Subset
+from . import logger
 
 # Setup logger
-logger = logging.getLogger(__name__)
+log = logger.setup(__name__)
 
 
 # --- Loss Function ------------------------------------------------------------
@@ -55,7 +56,7 @@ class MultiCriterion():
         # Generate the combined objective function
         self.calculate = partial(self._loss)
 
-        logger.debug("Initialized a multi-criterion loss function with "
+        log.debug("Initialized a multi-criterion loss function with "
                      "objectives: %s, parameters: %s, and weights: %s", 
                      objectives, parameters, weights)
 
@@ -139,7 +140,7 @@ class UniCriterion():
         self.selectBy = selectBy
         self.parameters = parameters
 
-        logger.info("Initialized a uni-criterion loss function with "
+        log.info("Initialized a uni-criterion loss function with "
                     "objective: %s, solve array: %s, selection method: %s, "
                     "and parameters: %s", 
                     objective.__name__, solveArray, selectBy, parameters)
