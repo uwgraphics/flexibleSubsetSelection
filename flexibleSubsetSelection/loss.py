@@ -1,8 +1,7 @@
-# --- Imports ------------------------------------------------------------------
+# --- Imports and Setup --------------------------------------------------------
 
 # Standard library
 from functools import partial
-import logging
 from typing import Any, Callable, Dict, List
 
 # Third party

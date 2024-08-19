@@ -1,7 +1,6 @@
-# --- Imports ------------------------------------------------------------------
+# --- Imports and Setup --------------------------------------------------------
 
 # Standard library
-import logging
 from pathlib import Path
 from typing import Literal
 
@@ -19,6 +18,7 @@ from . import logger
 
 # Setup logger
 log = logger.setup(name=__name__)
+
 
 # --- Dataset and Subset Classes -----------------------------------------------
 
@@ -328,9 +328,9 @@ class Subset(Set):
         """
         string = f"Subset(size={self.size}"
         if self.solveTime is not None:
-            string = ", ".join(string, f"time={round(self.solveTime, 4)}s")
+            string = ", ".join(string, f"time={self.solveTime:.4f}s")
         if self.loss is not None:
-            string = ", ".join(string, f"loss={round(self.loss, 4)})")
+            string = ", ".join(string, f"loss={self.loss:.4f})")
         return string
 
     def __str__(self) -> str:

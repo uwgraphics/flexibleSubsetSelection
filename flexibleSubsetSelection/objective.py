@@ -159,9 +159,12 @@ def entropy(array: np.ndarray) -> float:
     probabilities = np.array(list(counts.values()))/total
     return np.sum(probabilities * np.log(probabilities))
 
+from ott.problems.linear import linear_problem
+    
 def sinkhorn(subset, fullData, solveFunction):
-    geometry = pointcloud.PointCloud(fullData, subset)
-    sinkhornOutput = solveFunction(geometry)
+    geometry = pointcloud.PointCloud(fullData, subset, epsilon=1)
+    problem = linear_problem.LinearProblem(geometry)
+    sinkhornOutput = solveFunction(problem)
     return sinkhornOutput.reg_ot_cost
 
 
