@@ -23,11 +23,11 @@ def setup(name: str = "flexibleSubsetSelection",
     if not log.hasHandlers():
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(level)
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
-        )
+        formatString = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
+        formatter = logging.Formatter(formatString)
         handler.setFormatter(formatter)
         log.addHandler(handler)
-        log.setLevel(level)
-        log.propagate = False
+
+    log.setLevel(level)
+    log.propagate = False
     return log
