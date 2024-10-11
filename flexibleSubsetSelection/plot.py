@@ -4,6 +4,8 @@
 from typing import Callable
 
 # Third party
+from IPython.display import display, clear_output
+
 import matplotlib
 from matplotlib.axes import Axes
 from matplotlib.colors import to_rgb, to_hex
@@ -347,3 +349,57 @@ def histogram(ax: Axes, color: Color, dataset: (Dataset | None) = None,
             
             ax.bar(positions, subsetHeights, width=1, 
                    color=color.palette["darkGreen"], alpha=0.5)
+            
+class RealTimePlotter:
+    def __init__(self, color):
+        # Initialize the figure and axis
+        self.fig, self.ax = plt.subplots(figsize=(4, 4))
+        self.iterations = []
+        self.losses = []
+        self.subsetSizes = []
+        self.color = color
+
+        # Set up the initial plot
+        self.ax.set_xlabel('Iteration')
+        self.ax.set_ylabel('Loss')
+        self.ax.set_title('Real-Time Loss During Solver')
+        self.ax.set_ylim(bottom=0)  # Set the lower y-axis limit to 0
+
+        # Display the figure initially
+        display(self.fig)
+    
+    def update(self, iteration, loss, subsetSize=None):
+        # Append the current iteration and loss to lists
+        self.iterations.append(iteration)
+        self.losses.append(loss)
+        self.subsetSizes.append(subsetSize)
+
+        # Clear the previous output (but don't clear the figure)
+        clear_output(wait=True)
+        self.ax.clear()
+        
+        self.ax.set_xlabel('Iteration')
+        # self.ax.set_ylabel('Loss')
+        self.ax.set_title('Minimum Loss')
+        
+        # Plot the updated loss values
+        self.ax.plot(self.iterations, 
+                     self.losses, 
+                     c=self.color["orange"], 
+                     label="Loss", 
+                     lw=2)
+        if subsetSize is not None:
+            self.ax.plot(self.iterations, 
+                        self.subsetSizes, 
+                        c=self.color["green"], 
+                        label="Subset Size", 
+                        lw=2)
+        self.ax.legend()
+        
+        # Display the updated plot
+        display(self.fig)
+        plt.close(self.fig)
+
+    def close(self):
+        # Close the plot when done
+        plt.close(self.fig)

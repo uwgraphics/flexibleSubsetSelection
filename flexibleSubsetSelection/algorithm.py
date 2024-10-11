@@ -140,7 +140,7 @@ def worstOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
 
 
 def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
-               seed=None):
+               seed=None, callback=None):
     """
     A greedy algorithm with a greedy swap heuristic for subset selection.
 
@@ -170,6 +170,9 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
 
     for i in range(maxIterations):
         log.debug("Iteration %s/%s: Loss %s.", i, maxIterations, loss)
+        if callback:
+            callback(iterations, loss)
+        
         if i not in indices:
             zSwapBest = np.copy(z)
             lossSwapBest = loss
@@ -199,7 +202,7 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
     return z, loss # return indicator and final loss
 
 def greedyMinSubset(dataset, lossFunction, epsilon, minError=0, 
-                    maxIterations=None, seed=None, initialSize=1):
+                    maxIterations=None, seed=None, initialSize=1, callback=None):
     """
     A greedy algorithm for subset selection to minimize the size of the subset 
     such that lossFunction(subset) <= epsilon.
@@ -214,6 +217,7 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
         seed (int, rng, optional): The random seed or NumPy rng for random 
             generation and reproducibility
         initialSize (int, optional): Initial size of the subset
+        callback (function, optional): A callback function for loss values
 
     Returns:
         z (array): Indicator vector of included items in the subset
@@ -252,6 +256,8 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
 
     while iterations < maxIterations:
         log.debug("Iteration: %s, Loss: %s, Error: %s, Subset Size: %s.", iterations, current_loss, error, np.sum(z))
+        if callback:
+            callback(iterations, current_loss, subsetSize=np.sum(z))
         
         # Check if error is less than or equal to epsilon
         if error <= epsilon:
@@ -314,7 +320,7 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
     return z, error
 
 def greedyMixed(dataset, lossFunction, weight=1.0, minError=0, 
-                maxIterations=None, seed=None, initialSize=1):
+                maxIterations=None, seed=None, initialSize=1, callback=None):
     """
     A greedy algorithm to minimize the total 
     loss = weight * subsetSize + lossFunction.calculate().
@@ -363,6 +369,8 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
 
     while iterations < maxIterations:
         log.debug("Iteration %s: Total Loss %s, Subset Size %s", iterations, total_loss, np.sum(z))
+        if callback:
+            callback(iterations, total_loss, subsetSize=np.sum(z))
         
         # Check if error is less than or equal to minError
         if error <= minError:
