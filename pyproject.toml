@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+description = "A general strategy for organizing, designing, and prototyping subset selection for visualization by casting the problem in terms of multi-criterion optimization."
+readme = "README.md"
+name = "flexibleSubsetSelection"
+version = "0.1"
+authors = [{ name="Connor Bailey", email="cbbcbail@cs.wisc.edu" }]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["flexibleSubsetSelection"]
