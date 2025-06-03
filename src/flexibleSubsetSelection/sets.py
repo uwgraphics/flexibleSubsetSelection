@@ -178,28 +178,42 @@ class Dataset(Set):
             except Exception as e:
                 log.exception("Error applying function '%s'.", name)
 
-    def scale(self, interval: (tuple | None) = None) -> None:
+    def scale(self, interval: (tuple | None) = None, 
+        features: (list | None) = None) -> None:
         """
         Scales self.dataArray numpy array based on self.interval tuple
 
         Args:
             interval: The interval to scale the data to. The class attribute is 
             used if none is specified.
+            features: List of features to scale. Defaults to self.features.
         """
+        if features is None:
+            features = self.features
         if interval is None:
             interval = self.interval
-
-        minVals = self.dataArray.min(axis=0)
-        maxVals = self.dataArray.max(axis=0)
+        
+        # Gets specified features
+        try:
+            indices = [self.indices[feature] for feature in features]
+        except KeyError as e:
+            log.exception("Feature not found in indices.")
+        
+        selected = self.dataArray[:, indices]
+        minVals = selected.min(axis=0)
+        maxVals = selected.max(axis=0)
         
         # Avoid division by zero
         rangeVals = maxVals - minVals
         rangeVals[rangeVals == 0] = 1
 
-        self.dataArray = (self.dataArray - minVals) / rangeVals
-        self.dataArray = self.dataArray * (interval[1] - interval[0])
-        self.dataArray += interval[0]
-        log.info("Data scaled to %s.", interval)
+        # Update self.data to reflect scaled values
+        scaled = (selected - minVals) / rangeVals
+        scaled = scaled * (interval[1] - interval[0]) + interval[0]
+        self.dataArray[:, indices] = scaled
+        self.data.loc[:, features] = self.dataArray[:, indices]
+
+        log.info("Features %s scaled to %s.", features, interval)
         
     def discretize(self, bins: (int | ArrayLike), 
                    features: (list | None) = None, 
@@ -210,7 +224,7 @@ class Dataset(Set):
 
         Arg: 
             bins: Number of bins to use, bins in each feature, or bin edges.
-            features: The features to use for the binning
+            features: List of features to use for the binning
             strategy: sklearn KBinsDiscretizer strategy to use.
             array: The array to assignt he result to.
         
