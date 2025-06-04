@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Literal
 
 # Third party
+import ibis
+from ibis.expr.types import Table
+
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -27,36 +30,40 @@ class Set:
     Base class for Dataset and Subset providing shared save and load functions.
     """
     
-    def save(self, name: str, fileType: str = "pickle", 
-             directory: (str | Path) = "../data", index: bool = False) -> None:
+    def save(self, 
+        fileType: str = "csv", 
+        directory: (str | Path) = "../data"
+    ) -> None:
         """
-        Saves self.data as a file.
+        Saves the dataset eagerly to disk.
 
         Args:
-            name: The name of the file.
-            fileType: The type of file (pickle or csv).
-            directory: Directory to save the file in.
-            index: Whether to save the data index or not.
+            fileType: The file format to save the data: csv, parquet, or pickle
+            directory: The target directory in which to save the file.
         
         Raises:
             ValueError: If an unsupported file type is specified.
         """
         path = Path(directory)
         path.mkdir(parents=True, exist_ok=True)
-        filePath = path / f"{name}.{fileType}"
+        filePath = path / f"{self.name}.{fileType}"
 
         try:
             if fileType == "pickle":
                 with open(filePath, "wb") as f:
-                    pickle.dump(self.data, f)
+                    pickle.dump(self, f)
                 log.info(f"Data successfully saved at '%s'.", filePath)
             elif fileType == "csv":
-                self.data.to_csv(filePath, index=index)
+                self.table.to_csv(filePath)
+                log.info(f"Data successfully saved at '%s'.", filePath)
+            elif fileType == "parquet":
+                self.table.to_parquet(filePath)
                 log.info(f"Data successfully saved at '%s'.", filePath)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}.")
         except Exception as e:
-            log.exception("Error saving file")
+            log.exception("Error saving file to '%s': %s", filePath, e)
+            raise
 
     def load(self, name: str, fileType: str = "pickle",  
              directory: (str | Path) = "../data") -> None:
@@ -87,73 +94,108 @@ class Set:
         except Exception as e:
             log.exception("Error loading file")
 
-
 class Dataset(Set):
     """
-    A class for creating, storing, and processing of datasets for subsetting.
+    A class for creating, storing, and processing datasets for subset selection.
     """
 
-    def __init__(self, data: (pd.DataFrame | np.ndarray | None) = None, 
-                 randTypes: (str | list | None) = None, 
-                 size: (tuple | None) = None, interval: tuple = (1, 5), 
-                 features: (list | None) = None, 
-                 seed: (int | np.random.Generator | None) = None) -> None:
+    def __init__(self, 
+        name: str,
+        data: pd.DataFrame | np.ndarray | str | Table | None = None,
+        randTypes: (str | list[str] | None) = None, 
+        size: (tuple[int, int] | None) = None, 
+        interval: tuple[float, float] = (1.0, 5.0), 
+        features: (list[str] | None) = None, 
+        seed: (int | np.random.Generator | None) = None,  
+        backend: str = "duckdb"
+    ) -> None:
         """
-        Initialize a dataset with data or by random data generation.
+        Initialize a dataset by providing data or by random data generation.
 
         Args:
-            data: The data in pd.DataFrame or np.ndarray. 
-            randTypes: The method or methods for random data generation. 
-                Supported methods: "uniform", "binary", "categories", "normal",
-                "multimodal", "skew", "blobs"
-            size: The size of the dataset to create for random dataset 
-                generation or the size of the data (num rows, num columns).
-            interval: The interval for scaling data. 
-            features: The list of column features to consider.
-            seed: The random seed or generator for reproducibility. 
+            name: The name of the dataset and the Ibis table storing it
+            data: Specify the dataset with a dataframe, array, filepath, or Ibis
+                table, or use random data generation.
+            randTypes: The method(s) for random data generation. Supported
+                methods: "uniform", "binary", "categories", "normal",
+                "multimodal", "skew", "blobs".
+            size: The size of the dataset to generate (rows, columns).
+            interval: The interval range for generating or scaling data. 
+            features: The list of column features to assign to the dataset.
+            seed: The random seed or NumPy generator for reproducibility. 
+            backend: The Ibis backend for execution. (e.g., "duckdb", "pandas", 
+                "polars", "pyspark", etc.).
 
         Raises:
-            ValueError: If no data or random generation method is specified or
-            if no size of data to generate is specified.
+            ValueError: If neither data, nor a random generation method and size 
+            of data are specified.
         """
-        # Initialize data
-        if data is not None:  # initialize with provided data
-            self.size = data.shape
-            if isinstance(data, pd.DataFrame):
-                self.data = data 
-            else:
-                self.data = pd.DataFrame(data)
-        elif randTypes is not None:  # initialize with random data generation
-            if size is not None:
-                if isinstance(randTypes, list):
-                    self.data = pd.DataFrame({
-                        i: generate.randomData(randType, size, interval, seed) 
-                        for i, randType in enumerate(randTypes)
-                    })
-                else:
-                    self.data = generate.randomData(randTypes, 
-                                                    size, 
-                                                    interval, 
-                                                    seed)
-                if features is not None:
-                    self.data.columns = features
-                self.size = size
-            else:
+        self.name = name
+        self.backend = backend
+
+        # Create Ibis connection with backend
+        if isinstance(data, Table): # Data specified as an Ibis table
+            self.table = data
+            self.conn = data._client
+        else:
+            self._connect(backend)   
+
+        # Load data if specified as a DataFrame, ndarray, or string
+        if data is not None: # initialize with provided data
+            if isinstance(data, (pd.DataFrame, np.ndarray)):
+                df = pd.DataFrame(data)
+                self.table = self.conn.create_table(name, df)
+            elif isinstance(data, (str, Path)):
+                if not Path(data).exists():
+                    raise ValueError(f"File '{data}' does not exist.")
+                try:
+                    self.table = self.conn.read_uri(data)
+                except Exception as e:
+                    raise ValueError(f"Failed to read '{data}': {e}.")
+                
+        # Initialize dataset with random data generation
+        else:
+            if randTypes is None: 
+                raise ValueError("No data or random generation method specified.")
+
+            if size is None:
                 raise ValueError("No size of data to generate specified.")
-        else:
-            raise ValueError("No data or random generation method specified.")
+            
+            df = (pd.concat(
+                [generate.random(i, size, interval, seed) for i in randTypes],
+                axis=1
+            ) if isinstance(randTypes, list) else
+                generate.random(randTypes, size, interval, seed)
+            )
+            if features is not None:
+                if len(features) != df.shape[1]:
+                    raise ValueError("Number of features != number of columns.")
+                df.columns = features
+            self.table = self.conn.create_table(name, df)
 
-        # Initialize features
-        if features is None:
-            self.features = list(self.data.columns)
-        else:
-            self.features = features
+        log.info("Dataset '%s' created with backend '%s'.", name, backend)
 
-        # Initialize dataArray
-        self.dataArray = self.data[self.features].to_numpy()
-        self.indices = {feature: i for i, feature in enumerate(self.features)}
-        self.interval = interval
-        log.info("%s created.", self)
+    def _connect(self, backend: str) -> None:
+        """
+        Connect dataset to specified Ibis backend
+
+        Args:
+            backend: The name of the Ibis backend: "duckdb", "pandas", etc.
+        
+        Raises:
+            ValueError: If the backend is not available or the connection fails
+        """
+        try: 
+            connectionFunction = getattr(getattr(ibis, backend), "connect")
+        except AttributeError:
+            raise ValueError(
+                f"Ibis backend '{backend}' is not available. "
+                f"Install backends with: pip install 'ibis-framework[backend]'."
+            )
+        try:
+            self.conn = connectionFunction()
+        except Exception as e:
+            raise ValueError(f"Failed to connect to backend '{backend}': {e}")
 
     def preprocess(self, **parameters) -> None:
         """

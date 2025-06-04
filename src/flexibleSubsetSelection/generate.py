@@ -9,8 +9,11 @@ from sklearn.datasets import make_blobs
 
 # --- Random Dataset Generation ------------------------------------------------
 
-def randomData(randType: str, size: tuple, interval: tuple, 
-               seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
+def random(randType: str, 
+    size: tuple, 
+    interval: tuple, 
+    seed: (int | np.random.Generator | None) = None
+) -> pd.DataFrame:
     """
     Generate random data based on the specified random generation method.
 
