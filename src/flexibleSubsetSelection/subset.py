@@ -49,7 +49,7 @@ class Subset:
         self.dataset = dataset
         self.z = z.astype(bool)
         self.selectBy = selectBy
-        
+
         if len(z) != dataset.size[0]:
             raise ValueError("Length of z must match the length of dataset.")
 
@@ -108,7 +108,8 @@ class Subset:
 
     def save(self, 
         fileType: str = "pickle", 
-        directory: (str | Path) = "../data"
+        directory: (str | Path) = "../data",
+        name: str = None
     ) -> None:
         """
         Save the subset data to a file.
@@ -120,9 +121,11 @@ class Subset:
         Raises:
             ValueError: If an unsupported file type is specified.
         """
+        if name is None:
+            name = f"{self.dataset.name}Subset"
         path = Path(directory)
         path.mkdir(parents=True, exist_ok=True)
-        filePath = path / f"{self.dataset.name}.{fileType}"
+        filePath = path / f"{name}.{fileType}"
 
         try:
             if fileType == "pickle":
