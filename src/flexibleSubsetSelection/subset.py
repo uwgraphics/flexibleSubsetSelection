@@ -12,6 +12,7 @@ import pickle
 # Local files
 from . import logger
 from .dataset import Dataset
+from .util import select
 
 # Setup logger
 log = logger.setup(name=__name__)
@@ -28,7 +29,8 @@ class Subset:
         dataset: Dataset, 
         z: np.ndarray, 
         solveTime: (float | None) = None,
-        loss: (float | None) = None
+        loss: (float | None) = None,
+        selectBy: str = "row"
     ) -> None:
         """
         Initialize a subset with a Dataset object and the indicator vector z.
@@ -39,12 +41,15 @@ class Subset:
                 are included in the subset.
             solveTime: The computation time to solve for the subset in seconds.
             loss: The calculated loss of the subset.
+            selectBy: The mode of selection to use for selecting the subset
 
         Raises:
             ValueError: If length of z does not match the length of dataset.
         """
         self.dataset = dataset
         self.z = z.astype(bool)
+        self.selectBy = selectBy
+        
         if len(z) != dataset.size[0]:
             raise ValueError("Length of z must match the length of dataset.")
 
@@ -58,6 +63,15 @@ class Subset:
         self.loss = loss
         log.info("Created %s.", self)
     
+    @property
+    def array(self) -> np.ndarray:
+        """
+        Returns the subset of the dataset array.
+        """
+        if not hasattr(self, "_array"):
+            self._array = select(self.dataset.array, self.z, self.selectBy)
+        return self._array
+
     @classmethod
     def load(cls, 
         name: str, 

@@ -9,8 +9,9 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # Local files
-from .subset import Dataset, Subset
 from . import logger
+from .dataset import Dataset
+from .util import select
 
 # Setup logger
 log = logger.setup(__name__)
@@ -24,9 +25,11 @@ class MultiCriterion():
     corresponding weights for subset selection.
     """
 
-    def __init__(self, objectives: List[Callable], 
-                 parameters: List[Dict[str, Any]], 
-                 weights: (np.ndarray | None) = None) -> None:
+    def __init__(self, 
+        objectives: List[Callable], 
+        parameters: List[Dict[str, Any]], 
+        weights: (np.ndarray | None) = None
+    ) -> None:
         """
         Define a multi-criterion loss function with a set of objectives, 
         weights, and parameters
@@ -121,8 +124,12 @@ class UniCriterion():
     particular data array for subset selection.
     """
 
-    def __init__(self, objective: Callable, solveArray: str = "array", 
-                 selectBy: str = "row", **parameters: Any):
+    def __init__(self, 
+        objective: Callable, 
+        solveArray: str = "array", 
+        selectBy: str = "row", 
+        **parameters: Any
+    ) -> None:
         """
         Define a loss function with an objective and optional parameters for 
         subset selection.
@@ -177,23 +184,3 @@ class UniCriterion():
         if parameters:
             return f"Uni-criterion: {self.objective.__name__}, {parameters}"
         return f"Uni-criterion: {self.objective.__name__}"
-
-def select(array: np.ndarray, z: ArrayLike, selectBy: str) -> np.ndarray:
-    """
-    Selects a subset from array according to indicator z
-
-    Args:
-        array: The array to select from.
-        z: The indicator vector indicating which elements to select.
-        selectBy: The method to select the subset (row or matrix).
-    
-    Returns: The selected subset from the array.
-    
-    Raises: ValueError: If an unknown selection method is specified.
-    """
-    if selectBy == "row":
-        return array[z == 1]
-    elif selectBy == "matrix":
-        return array[z == 1][:, z == 1]
-    else:
-        raise ValueError("Unknown selection method specified.")
