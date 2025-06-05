@@ -194,22 +194,24 @@ class Dataset:
         features: (list | None) = None
     ) -> None:
         """
-        Scales the dataset based on the self.interval tuple
+        Scales the specified features of the dataset to the specified interval.
 
         Args:
-            interval: The interval to scale the data to. The class attribute is 
-            used if none is specified.
-            features: List of features to scale. Defaults to self.features.
+            interval: The interval to scale the data to.
+            features: The features to scale.
         """
+        if features is None:
+            features = self.features
+
         try:
-            indices = [self.indices[feature] for feature in features]
+            indices = [self.features.index(feature) for feature in features]
         except KeyError as e:
             log.exception("Feature not found in indices.")
-        
+
         selected = self.array[:, indices]
         minVals = selected.min(axis=0)
         maxVals = selected.max(axis=0)
-        
+
         # Avoid division by zero
         rangeVals = maxVals - minVals
         rangeVals[rangeVals == 0] = 1
@@ -217,15 +219,14 @@ class Dataset:
         # Update self.data to reflect scaled values
         scaled = (selected - minVals) / rangeVals
         scaled = scaled * (interval[1] - interval[0]) + interval[0]
-        self.array[:, indices] = scaled
-        self.data.loc[:, features] = self.array[:, indices]
+        self._array[:, indices] = scaled
 
         log.info("Features %s scaled to %s.", features, interval)
-        
+
     def discretize(self, 
         bins: (int | ArrayLike), 
         features: (list | None) = None, 
-        strategy: Literal["uniform","quantile","kmeans"] = "uniform", 
+        strategy: Literal["uniform", "quantile", "kmeans"] = "uniform", 
         array: (str | None) = None
     ) -> None:
         """
@@ -240,9 +241,12 @@ class Dataset:
         Raises:
             ValueError: if dimensions or features do not match dimensionality
         """
+        if features is None:
+            features = self.features
+
         # Gets specified features
         try:
-            indices = [self.indices[feature] for feature in features]
+            indices = [self.features.index(feature) for feature in features]
         except KeyError as e:
             log.exception("Feature not found in indices.")
         
@@ -251,7 +255,7 @@ class Dataset:
                                        encode = "ordinal", 
                                        strategy = strategy)
 
-        setattr(self, array, discretizer.fit_transform(selected))
+        self._array = discretizer.fit_transform(selected)
         self.bins = bins
         log.info("%s discretized by %s with %s bins.", array, strategy, bins)
         
@@ -266,8 +270,11 @@ class Dataset:
             dimensions: The number of dimensions to take the encoding in
             array: The array to assignt he result to.
         """
+        if features is None:
+            features = self.features
+
         # Get specified features
-        indices = [self.indices[feature] for feature in features]
+        indices = [self.features.index(feature) for feature in features]
         selected = self.array[:, indices]
 
         if dimensions > 1:
@@ -278,11 +285,11 @@ class Dataset:
         # Apply OneHotEncoder
         encoder = OneHotEncoder(sparse_output=False)
         encoded = encoder.fit_transform(selected)
-        
+
         # Remove the original columns and insert the one-hot encoded columns
         mask = np.ones(self.array.shape[1], dtype=bool)
         mask[indices] = False
-        setattr(self, array, np.hstack((self.array[:, mask], encoded)))
+        self._array = np.hstack((self.array[:, mask], encoded))
         log.info("Data one-hot encoded in '%s'", array)
 
     def save(self, 

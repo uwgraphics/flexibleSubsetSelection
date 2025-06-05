@@ -8,6 +8,7 @@ import ot
 
 # Local files
 from . import logger
+from .loss import UniCriterion, MultiCriterion
 
 # Setup logger
 log = logger.setup(__name__)
@@ -79,9 +80,17 @@ def optimize(objective, constraints, environment, solver,
 
 # --- Algorithms ---------------------------------------------------------------
 
-def bestOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
-               maxIterations=None, seed=None, selectBy="row"):
-
+def bestOfRandom(dataset, 
+    lossFunction: (UniCriterion | MultiCriterion), 
+    subsetSize: int, 
+    minLoss: int = 0, 
+    maxIterations: int = None, 
+    seed: (int | np.random.Generator | None) = None,  
+    selectBy: str = "row",
+) -> tuple[np.ndarray, float]:
+    """
+    Determine the best loss of subset selection of n random samples
+    """
     if maxIterations is None:
         maxIterations = dataset.size[0]
 
@@ -99,9 +108,17 @@ def bestOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
     return z, minLoss
 
 
-def averageOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
-                    maxIterations=None, seed=None, selectBy="row"):
-
+def averageOfRandom(dataset, 
+    lossFunction: (UniCriterion | MultiCriterion), 
+    subsetSize: int, 
+    minLoss: int = 0, 
+    maxIterations: int = None, 
+    seed: (int | np.random.Generator | None) = None,  
+    selectBy: str = "row",
+) -> tuple[np.ndarray, float]:
+    """
+    Determine the average loss of subset selection of n random samples
+    """
     if maxIterations is None:
         maxIterations = dataset.size[0]
 
@@ -116,12 +133,16 @@ def averageOfRandom(dataset, lossFunction, subsetSize, minLoss=0,
 
     return z, avgLoss
 
-
-def worstOfRandom(dataset, lossFunction, subsetSize, minLoss=0, 
-               maxIterations=None, seed=None, selectBy="row"):
+def worstOfRandom(dataset, 
+    lossFunction: (UniCriterion | MultiCriterion), 
+    subsetSize: int, 
+    minLoss: int = 0, 
+    maxIterations: int = None, 
+    seed: (int | np.random.Generator | None) = None,  
+    selectBy: str = "row",
+) -> tuple[np.ndarray, float]:
     """
-    maximize representativeness of a subset of size s of dataset of size n by m
-    according to metric function f using the p-norm
+    Determine the worst loss of subset selection of n random samples
     """
     if maxIterations is None:
         maxIterations = dataset.size[0]
