@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # Local files
-from .sets import Dataset, Subset
+from .subset import Dataset, Subset
 from . import logger
 
 # Setup logger
@@ -74,8 +74,8 @@ class MultiCriterion():
         loss = 0.0
         zipped = zip(self.objectives, self.parameters, self.weights)
         for objective, params, weight in zipped:
-            # retrieve solve array from attributes or default to dataArray
-            array = getattr(dataset, params.get("solveArray", "dataArray"))
+            # retrieve solve array from attributes or default to array
+            array = getattr(dataset, params.get("solveArray", "array"))
 
             # retrieve selectBy from attributes or default to row
             selectBy = params.get("selectBy", "row")
@@ -101,7 +101,7 @@ class MultiCriterion():
             for key, value in parameter.items():
                 if callable(value):
                     parameters.append(f"{key}: {value.__name__}")
-                if key == "solveArray" and value != "dataArray":
+                if key == "solveArray" and value != "array":
                     parameters.append(value)
             parameters = ", ".join(parameters)
 
@@ -121,7 +121,7 @@ class UniCriterion():
     particular data array for subset selection.
     """
 
-    def __init__(self, objective: Callable, solveArray: str = "dataArray", 
+    def __init__(self, objective: Callable, solveArray: str = "array", 
                  selectBy: str = "row", **parameters: Any):
         """
         Define a loss function with an objective and optional parameters for 
@@ -130,7 +130,7 @@ class UniCriterion():
         Args:
             objective: The objective function to define the loss.
             solveArray: The name of the array in dataset to use 
-                for subset selection. Default is "dataArray".
+                for subset selection. Default is "array".
             selectBy: The method to select subset from array. 
             **parameters: Additional parameters of the objective function.
         """
@@ -170,7 +170,7 @@ class UniCriterion():
         for key, value in self.parameters.items():
             if callable(value):
                 parameters.append(value.__name__)
-        if self.solveArray != "dataArray":
+        if self.solveArray != "array":
                 parameters.append(self.solveArray)
         parameters = ", ".join(parameters)
 

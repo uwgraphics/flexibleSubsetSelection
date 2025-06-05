@@ -17,7 +17,7 @@ import pandas as pd
 import seaborn as sns
 
 # Local files
-from .sets import Dataset, Subset
+from .subset import Dataset, Subset
 from .color import Color
 
 
