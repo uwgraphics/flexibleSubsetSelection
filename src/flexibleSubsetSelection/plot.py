@@ -283,17 +283,22 @@ def parallelCoordinates(ax: Axes, color: Color,
     """
     if dataset is None and subset is None:
         raise ValueError("At least one of dataset or subset must be provided.")
-    
+
     if dataset is not None:
-        pd.plotting.parallel_coordinates(dataset.array.assign(set="dataset"),
+        df_dataset = pd.DataFrame(dataset.array, columns=dataset.features)
+        df_dataset["set"] = "dataset"
+        pd.plotting.parallel_coordinates(df_dataset,
                                          "set",
                                          ax=ax,
                                          color=color.palette["green"],
                                          axvlines_kwds={'c': "white", "lw": 1},
                                          linewidth=dataLinewidth,
                                          **parameters)
+
     if subset is not None:
-        pd.plotting.parallel_coordinates(subset.data.assign(set="subset"),
+        df_subset = pd.DataFrame(subset.array, columns=subset.dataset.features)
+        df_subset["set"] = "subset"
+        pd.plotting.parallel_coordinates(df_subset,
                                          "set",
                                          ax=ax,
                                          color=color.palette["darkGreen"],

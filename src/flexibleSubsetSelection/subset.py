@@ -143,7 +143,7 @@ class Subset:
         """
         Return a detailed string representation of the Subset object.
         """
-        parts = [f"Subset(size={self.size})"]
+        parts = [f"Subset(name={self.dataset.name}, size={self.size})"]
         if self.solveTime is not None:
             parts.append(f"time={self.solveTime:.4f}s")
         if self.loss is not None:
@@ -159,7 +159,7 @@ class Subset:
         else:
             size = f"{self.size[0]}x{self.size[1]}"
 
-        string = f"subset of size {size}"
+        string = f"Subset of {self.dataset.name} of size {size}"
         if self.solveTime is not None:
             string += f" in {round(self.solveTime, 2)}s "
         if self.loss is not None:

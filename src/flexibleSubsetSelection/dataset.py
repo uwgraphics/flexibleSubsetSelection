@@ -12,7 +12,6 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 import pandas as pd
-import pickle
 from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
 # Local files
@@ -33,11 +32,11 @@ class Dataset:
     def __init__(self, 
         name: str,
         data: pd.DataFrame | np.ndarray | str | Table | None = None,
-        randTypes: (str | list[str] | None) = None, 
-        size: (tuple[int, int] | None) = None, 
+        randTypes: str | list[str] | None = None, 
+        size: tuple[int, int] | None = None, 
         interval: tuple[float, float] = (1.0, 5.0), 
-        features: (list[str] | None) = None, 
-        seed: (int | np.random.Generator | None) = None,  
+        features: list[str] | None = None, 
+        seed: int | np.random.Generator | None = None,  
         backend: str = "duckdb"
     ) -> None:
         """
@@ -67,47 +66,59 @@ class Dataset:
 
         # Create Ibis connection with backend
         if isinstance(data, Table): # Data specified as an Ibis table
-            self.table = data
-            self.conn = data._client
+            self._table = data
+            self._conn = data._client
         else:
             self._connect(backend)   
 
         # Load data if specified as a DataFrame, ndarray, or string
         if data is not None: # initialize with provided data
-            if isinstance(data, (pd.DataFrame, np.ndarray)):
+            if isinstance(data, pd.DataFrame):
+                if features is not None:
+                    missingFeatures = set(features) - set(data.columns)
+                    if missingFeatures:
+                        raise ValueError(f"Features not found in data: " 
+                                         f"{missingFeatures}")
+                    data = data[features]
+                self._table = self._conn.create_table(name, data)
+                self._array = data.to_numpy()
+                self._features = list(data.columns)
+                self._size = data.shape
+            elif isinstance(data, np.ndarray):
                 df = pd.DataFrame(data)
                 if features is not None:
-                    df = df[features]
-                self.table = self.conn.create_table(name, df)
-                self._array = df.to_numpy()
-                self._features = list(df.columns)
+                    df.columns = features
+                self._table = self._conn.create_table(name, df)
+                self._array = data
+                self._size = df.shape
             elif isinstance(data, (str, Path)):
                 if not Path(data).exists():
                     raise ValueError(f"File '{data}' does not exist.")
                 try:
-                    self.table = self.conn.read_uri(data)
+                    self._table = self._conn.read_uri(data)
                 except Exception as e:
                     raise ValueError(f"Failed to read '{data}': {e}.")
-                
+
         # Initialize dataset with random data generation
         else:
             if randTypes is None: 
-                raise ValueError("No data or random generation method specified.")
-
+                raise ValueError("No data or random generation type specified.")
+            elif isinstance(randTypes, str):
+                randTypes = [randTypes]
             if size is None:
                 raise ValueError("No size of data to generate specified.")
             
-            df = (pd.concat(
-                [generate.random(i, size, interval, seed) for i in randTypes],
+            df = pd.concat(
+                [generate.random(i, size, interval, seed) for i in randTypes], 
                 axis=1
-            ) if isinstance(randTypes, list) else
-                generate.random(randTypes, size, interval, seed)
             )
+
             if features is not None:
                 if len(features) != df.shape[1]:
                     raise ValueError("Number of features != number of columns.")
                 df.columns = features
-            self.table = self.conn.create_table(name, df)
+
+            self._table = self._conn.create_table(name, df)
             self._array = df.to_numpy()
             self._size = size
             self._features = list(df.columns)
@@ -132,7 +143,7 @@ class Dataset:
                 f"Install backends with: pip install 'ibis-framework[backend]'."
             )
         try:
-            self.conn = connectionFunction()
+            self._conn = connectionFunction()
         except Exception as e:
             raise ValueError(f"Failed to connect to backend '{backend}': {e}")
 
@@ -142,8 +153,8 @@ class Dataset:
         Lazy evaluation of the size of the dataset when required
         """
         if not hasattr(self, "_size"):
-            rows = self.conn.execute(self.table.count()).scalar()
-            cols = len(self.table.schema().names)
+            rows = self._conn.execute(self._table.count()).scalar()
+            cols = len(self._table.schema().names)
             self._size = (rows, cols)
         return self._size
 
@@ -153,7 +164,7 @@ class Dataset:
         Lazy materialization of the data array from the Ibis table when required
         """
         if not hasattr(self, "_array"):
-            self._array = self.table.to_pandas().to_numpy()
+            self._array = self._table.to_pandas().to_numpy()
         return self._array
     
     @property
@@ -162,12 +173,12 @@ class Dataset:
         Lazy evaluation of feature columns in dataset when required
         """
         if not hasattr(self, "_features"):
-            self._features = list(self.table.schema().names)
+            self._features = list(self._table.schema().names)
         return self._features
 
     def preprocess(self, **parameters) -> None:
         """
-        Perform custom preprocessing of a preprocess function on self.table
+        Perform custom preprocessing of a preprocess function on the dataset
         and assign it to the specified name.
 
         Args:
@@ -179,27 +190,29 @@ class Dataset:
         """
         for name, preprocessor in parameters.items():
             try:
-                array = self.table.to_pandas().to_numpy()
                 if isinstance(preprocessor, tuple): # with parameters
                     func, params = preprocessor
-                    setattr(self, name, func(array, **params))
+                    setattr(self, name, func(self.array, **params))
                 else:
-                    setattr(self, name, preprocessor(array))
+                    setattr(self, name, preprocessor(self.array))
                 log.info(f"Data preprocessed with function '%s'.", name)
             except Exception as e:
-                log.exception("Error applying function '%s'.", name)
+                log.exception(f"Error applying function '%s'.", name)
 
     def scale(self, 
-        interval: (tuple | None) = None, 
-        features: (list | None) = None
+        interval: tuple | None = None, 
+        features: list | None = None
     ) -> None:
         """
-        Scales the specified features of the dataset to the specified interval.
+        Modifies the specified features of the dataset by scaling them to the 
+        specified interval.
 
         Args:
             interval: The interval to scale the data to.
             features: The features to scale.
         """
+        if interval is None:
+            interval = self.interval
         if features is None:
             features = self.features
 
@@ -207,6 +220,7 @@ class Dataset:
             indices = [self.features.index(feature) for feature in features]
         except KeyError as e:
             log.exception("Feature not found in indices.")
+            raise
 
         selected = self.array[:, indices]
         minVals = selected.min(axis=0)
@@ -216,7 +230,7 @@ class Dataset:
         rangeVals = maxVals - minVals
         rangeVals[rangeVals == 0] = 1
 
-        # Update self.data to reflect scaled values
+        # Update array to reflect scaled values
         scaled = (selected - minVals) / rangeVals
         scaled = scaled * (interval[1] - interval[0]) + interval[0]
         self._array[:, indices] = scaled
@@ -224,19 +238,18 @@ class Dataset:
         log.info("Features %s scaled to %s.", features, interval)
 
     def discretize(self, 
-        bins: (int | ArrayLike), 
-        features: (list | None) = None, 
-        strategy: Literal["uniform", "quantile", "kmeans"] = "uniform", 
-        array: (str | None) = None
+        bins: int | ArrayLike, 
+        features: list | None = None, 
+        strategy: Literal["uniform", "quantile", "kmeans"] = "uniform"
     ) -> None:
         """
-        Discretize the dataset into bins.
+        Modifies the specified features of the dataset by discretizing them into
+        bins according to the given strategy.
 
-        Arg: 
+        Args: 
             bins: Number of bins to use, bins in each feature, or bin edges.
             features: List of features to use for the binning
             strategy: sklearn KBinsDiscretizer strategy to use.
-            array: The array to assignt he result to.
         
         Raises:
             ValueError: if dimensions or features do not match dimensionality
@@ -255,20 +268,21 @@ class Dataset:
                                        encode = "ordinal", 
                                        strategy = strategy)
 
-        self._array = discretizer.fit_transform(selected)
-        self.bins = bins
-        log.info("%s discretized by %s with %s bins.", array, strategy, bins)
+        discretized = discretizer.fit_transform(selected)
+        self._array[:, indices] = discretized
+        log.info("Dataset discretized by %s with %s bins.", strategy, bins)
         
-    def encode(self, features: (list | None) = None, dimensions: int = 1, 
-               array: (str | None) = None) -> None:
+    def encode(self, 
+        features: list | None = None, 
+        dimensions: int = 1
+    ) -> None:
         """
-        One hot encodes the dataset with sklearn OneHotEncoder assuming data 
-        is discretized.
+        Modifies the specified features of the dataset by one hot encoding them,
+        assuming they are discrete.
 
-        Arg: 
+        Args: 
             features: The features to use for the binning
             dimensions: The number of dimensions to take the encoding in
-            array: The array to assignt he result to.
         """
         if features is None:
             features = self.features
@@ -290,11 +304,11 @@ class Dataset:
         mask = np.ones(self.array.shape[1], dtype=bool)
         mask[indices] = False
         self._array = np.hstack((self.array[:, mask], encoded))
-        log.info("Data one-hot encoded in '%s'", array)
+        log.info("Data one-hot encoded with %d dimensions.", dimensions)
 
     def save(self, 
         fileType: str = "csv", 
-        directory: (str | Path) = "../data"
+        directory: str | Path = "../data"
     ) -> None:
         """
         Saves the dataset eagerly to disk.
@@ -312,9 +326,9 @@ class Dataset:
 
         try:
             if fileType == "csv":
-                self.table.to_csv(filePath)
+                self._table.to_csv(filePath)
             elif fileType == "parquet":
-                self.table.to_parquet(filePath)
+                self._table.to_parquet(filePath)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}.")
         except Exception as e:
@@ -327,13 +341,19 @@ class Dataset:
         """
         Return a detailed string representation of the Dataset object.
         """
-        return (f"Dataset(size={self.size}, "
-                f"features={self.features}, "
-                f"interval={self.interval})")
+        return (f"Dataset(name='{self.name}', size={self.size}, "
+                f"features={self.features})")
 
     def __str__(self) -> str:
         """
         Return a user-friendly string representation of the Dataset object.
         """
-        return (f"Dataset with {self.size[0]} rows and {len(self.features)} "
-                f"features: {self.features}")
+        return (f"Dataset {self.name}: {self.size[0]} rows x "
+                f"{len(self.features)} features "
+                f"{self.features[:3]}{'...' if len(self.features) > 3 else ''}")
+    
+    def __len__(self) -> int:
+        """
+        Returns the number of rows in the dataset
+        """
+        return self.size[0]
