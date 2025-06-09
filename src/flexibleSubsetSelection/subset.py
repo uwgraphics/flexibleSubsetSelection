@@ -2,7 +2,6 @@
 
 # Standard library
 from pathlib import Path
-from typing import Literal
 
 # Third party
 import numpy as np
@@ -110,8 +109,9 @@ class Subset:
             else:
                 raise ValueError(f"Unsupported file type: {fileType}.")
         except Exception as e:
-            log.exception(f"Error loading subset from '{filePath}': {e}")
-            raise
+            errorMessage = "Error loading subset from '%s'" % filePath
+            log.exception(errorMessage)
+            raise RuntimeError(errorMessage) from e
 
     def save(self, 
         fileType: str = "pickle", 
@@ -144,7 +144,9 @@ class Subset:
                 raise ValueError(f"Unsupported file type: {fileType}")
             log.info(f"Subset saved to '{filePath}'.")
         except Exception as e:
-            log.exception(f"Error saving subset to '{filePath}'.")
+            errorMessage = "Error saving subset to '%s'" % filePath
+            log.exception(errorMessage)
+            raise RuntimeError(errorMessage) from e
 
     def __repr__(self) -> str:
         """
@@ -181,3 +183,6 @@ class Subset:
             data = getattr(self.dataset, attr)
             return select(data, self.z, self.selectBy)
         raise AttributeError(f"'Subset' object has no attribute '{attr}'")
+
+    def __len__(self) -> int:
+        return self.size[0]

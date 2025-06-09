@@ -252,7 +252,6 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
     log.debug("Solving for a subset such that loss(subset) <= %s.", epsilon)
     iterations = 0
     consecutive_stable_iterations = 0
-    prev_subset_size = initialSize
 
     # Set the random seed
     np.random.seed(seed)
@@ -307,7 +306,6 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
             
             if dropped:
                 consecutive_stable_iterations = 0  # Reset consecutive stable iterations
-                prev_subset_size = np.sum(z)
                 continue  # Continue optimizing if dropped points successfully
             else:
                 consecutive_stable_iterations += 1
@@ -419,7 +417,7 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
             total_loss = weight * np.sum(z) + current_loss
             error = abs(total_loss)  # update error
         else:
-            break;
+            break
         
         iterations += 1
 

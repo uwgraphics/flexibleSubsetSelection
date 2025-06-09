@@ -48,7 +48,7 @@ class Screen:
 
     def writeLine(self, text, x=10, y=None):
         """write text on screen at column x line y"""
-        if y == None:
+        if y is None:
             y = self.lineToWrite
         self.lineToWrite += 1
 

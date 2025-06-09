@@ -14,14 +14,14 @@ Modules:
 """
 __version__ = "0.2"
 
-# Import top level classes
-from .dataset import Dataset                   # Data management classes
+# Import top-level classes
+from .dataset import Dataset
 from .subset import Subset                     
-from .loss import UniCriterion, MultiCriterion # Loss function classes
-from .solver import Solver                     # Solver class
-from .color import Color                       # Color class
+from .loss import UniCriterion, MultiCriterion
+from .solver import Solver
+from .color import Color
 
-# Import sub-level component functions
+# Import sub-modules
 from . import (
     plot,      # Plotting functions for datasets and subsets
     algorithm, # Algorithms for subset selection
@@ -29,3 +29,17 @@ from . import (
     metric,    # Data metric functions
     logger     # Logging information to console or files
 )
+
+__all__ = [
+    "Dataset",
+    "Subset",
+    "UniCriterion",
+    "MultiCriterion",
+    "Solver",
+    "Color",
+    "plot",
+    "algorithm",
+    "objective",
+    "metric",
+    "logger",
+]

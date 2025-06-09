@@ -7,6 +7,9 @@ import time
 
 
 # --- Timer --------------------------------------------------------------------
+class TimerError(Exception):
+    """A custom exception used to report errors in Timer usage."""
+    pass
 
 class Timer(ContextDecorator):
     def __init__(self):
@@ -15,14 +18,14 @@ class Timer(ContextDecorator):
     def start(self):
         """Start a new timer."""
         if self._startTime is not None:
-            raise TimerError(f"Timer is running. Use .stop() to stop it.")
+            raise TimerError("Timer is running. Use .stop() to stop it.")
 
         self._startTime = time.perf_counter()
 
     def stop(self) -> None:
         """Stop the timer, and return the elapsed time."""
         if self._startTime is None:
-            raise TimerError(f"Timer is not running. Use .start() to start it.")
+            raise TimerError("Timer is not running. Use .start() to start it.")
 
         self.elapsedTime = time.perf_counter() - self._startTime
         self._startTime = None

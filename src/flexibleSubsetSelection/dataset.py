@@ -2,7 +2,7 @@
 
 # Standard library
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 # Third party
 import ibis
@@ -137,6 +137,15 @@ class Dataset:
             cols = len(self._table.schema().names)
             self._size = (rows, cols)
         return self._size
+    
+    @property
+    def features(self) -> list[str]:
+        """
+        Lazy evaluation of feature columns in dataset when required
+        """
+        if not hasattr(self, "_features"):
+            self._features = list(self._table.schema().names)
+        return self._features
 
     @property
     def array(self) -> np.ndarray:
@@ -148,15 +157,6 @@ class Dataset:
             self._array = self._transform(self._table.to_pandas().to_numpy())
         return self._array
     
-    @property
-    def features(self) -> list[str]:
-        """
-        Lazy evaluation of feature columns in dataset when required
-        """
-        if not hasattr(self, "_features"):
-            self._features = list(self._table.schema().names)
-        return self._features
-
     @property
     def transforms(self) -> list[str]:
         """
@@ -177,14 +177,13 @@ class Dataset:
         """
         return [t["name"] for t in self._metrics]
     
-    def compute(self, **parameters) -> None:
+    def compute(self, **parameters: Any) -> None:
         """
-        Perform custom preprocessing of a preprocess function on the dataset
-        and assign it to the specified name.
+        Compute a metric on the dataset be specifying a name and function.
 
         Args:
             parameters: Keyword arguments where the key is the name of the 
-                preprocessing function and the value is either the function (for
+                metric function and the value is either the function (for
                 functions that don't require parameters), or a tuple where the 
                 first element is the function and the second element is a 
                 dictionary of additional parameters.
@@ -199,17 +198,18 @@ class Dataset:
                 self._metrics.append({"name": name, 
                                       "func": function, 
                                       "params": parameters})
-                log.info(f"Data preprocessed with function '%s'.", name)
+                log.info("Data preprocessed with function '%s'.", name)
             except Exception as e:
-                log.exception(f"Error applying function '%s'.", name)
+                errorMessage = "Error applying function '%s'." % name
+                log.exception(errorMessage)
+                raise RuntimeError(errorMessage) from e
 
     def scale(self, 
         interval: tuple | None = None, 
         features: list | None = None
     ) -> None:
         """
-        Modifies the specified features of the dataset by scaling them to the 
-        specified interval.
+        Scale dataset features to a specified interval.
 
         Args:
             interval: The interval to scale the data to.
@@ -226,8 +226,9 @@ class Dataset:
         try:
             indices = [self.features.index(f) for f in features]
         except ValueError as e:
-            log.exception("Feature not found in scale.")
-            raise
+            errorMessage = "Feature not found in scale."
+            log.exception(errorMessage)
+            raise RuntimeError(errorMessage) from e
 
         self._transforms.append({
             "name": "scaled",
@@ -260,8 +261,9 @@ class Dataset:
         try:
             indices = [self.features.index(f) for f in features]
         except ValueError as e:
-            log.exception("Feature not found in discretize.")
-            raise
+            errorMessage = "Feature not found in discretize."
+            log.exception(errorMessage)
+            raise RuntimeError(errorMessage) from e
         
         self._transforms.append({
             "name": "discretized",
@@ -292,8 +294,9 @@ class Dataset:
         try:
             indices = [self.features.index(f) for f in features]
         except ValueError as e:
-            log.exception("Feature not found in encode.")
-            raise
+            errorMessage = "Feature not found in encode."
+            log.exception(errorMessage)
+            raise RuntimeWarning(errorMessage) from e
         
         self._transforms.append({
             "name": "encoded",
@@ -335,49 +338,7 @@ class Dataset:
             log.exception("Error saving file to '%s': %s", filePath, e)
             raise
 
-        log.info(f"Data successfully saved at '%s'.", filePath)
-
-    def _connect(self, backend: str) -> None:
-        """
-        Connect dataset to specified Ibis backend
-
-        Args:
-            backend: The name of the Ibis backend: "duckdb", "pandas", etc.
-        
-        Raises:
-            ValueError: If the backend is not available or the connection fails
-        """
-        try: 
-            connectionFunction = getattr(getattr(ibis, backend), "connect")
-        except AttributeError:
-            raise ValueError(
-                f"Ibis backend '{backend}' is not available. "
-                f"Install backends with: pip install 'ibis-framework[backend]'."
-            )
-        try:
-            self._conn = connectionFunction()
-        except Exception as e:
-            raise ValueError(f"Failed to connect to backend '{backend}': {e}")
-
-    def _transform(self, array: np.ndarray, name: str = None) -> np.ndarray:
-        """
-        Evaluate transformations up to and including the specified transform.
-
-        Args: 
-            name: The name of the transform to evaluate to if specified. If 
-                None, the full transformation pipeline is evaluated.
-        """
-        if name == "original" or len(self._transforms) == 1:
-            return array
-        for transform in self._transforms[1:]:
-            try:
-                array = transform["func"](array, **transform["params"])
-            except Exception as e:
-                log.exception(f"Failed to apply transform {transform['name']}")
-                raise
-            if name and transform["name"] == name:
-                break
-        return array
+        log.info("Data successfully saved at '%s'.", filePath)
 
     def __repr__(self) -> str:
         """
@@ -412,3 +373,46 @@ class Dataset:
             array = self._table.to_pandas().to_numpy()
             return self._transform(array, name=attr)
         raise AttributeError(f"'Dataset' object has no attribute '{attr}'")
+
+    def _connect(self, backend: str) -> None:
+        """
+        Connect dataset to specified Ibis backend
+
+        Args:
+            backend: The name of the Ibis backend: "duckdb", "pandas", etc.
+        
+        Raises:
+            ValueError: If the backend is not available or the connection fails
+        """
+        try: 
+            connectionFunction = getattr(getattr(ibis, backend), "connect")
+        except AttributeError:
+            raise ValueError(
+                f"Ibis backend '{backend}' is not available. "
+                f"Install backends with: pip install 'ibis-framework[backend]'."
+            )
+        try:
+            self._conn = connectionFunction()
+        except Exception as e:
+            raise ValueError(f"Failed to connect to backend '{backend}': {e}")
+
+    def _transform(self, array: np.ndarray, name: str = None) -> np.ndarray:
+        """
+        Evaluate transformations up to and including the specified transform.
+
+        Args: 
+            name: The name of the transform to evaluate to if specified. If 
+                None, the full transformation pipeline is evaluated.
+        """
+        if name == "original" or len(self._transforms) == 1:
+            return array
+        for t in self._transforms[1:]:
+            try:
+                array = t["func"](array, **t["params"])
+            except Exception as e:
+                errorMessage = "Transform '%s' failed." % t['name']
+                log.exception(errorMessage)
+                raise RuntimeError(errorMessage) from e
+            if name and t["name"] == name:
+                break
+        return array
