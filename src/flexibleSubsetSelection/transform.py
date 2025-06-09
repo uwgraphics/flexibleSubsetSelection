@@ -16,9 +16,9 @@ log = logger.setup(name=__name__)
 
 # --- Transform Functions ------------------------------------------------------
 
-def scale(data: np.ndarray, 
-    interval: tuple[float, float], 
-    indices: list[int]
+
+def scale(
+    data: np.ndarray, interval: tuple[float, float], indices: list[int]
 ) -> np.ndarray:
     """
     Returns data at indices scaled to the specified interval.
@@ -33,38 +33,36 @@ def scale(data: np.ndarray,
     rangeVals = np.where(maxVals - minVals == 0, 1, maxVals - minVals)
     scaled = (selected - minVals) / rangeVals
     scaled = scaled * (interval[1] - interval[0]) + interval[0]
-    
+
     result = data.copy()
     result[:, indices] = scaled
     return result
 
-def discretize(data: np.ndarray, 
-    bins: int | ArrayLike, 
+
+def discretize(
+    data: np.ndarray,
+    bins: int | ArrayLike,
     indices: list,
-    strategy: Literal["uniform", "quantile", "kmeans"] = "uniform"
+    strategy: Literal["uniform", "quantile", "kmeans"] = "uniform",
 ) -> np.ndarray:
     """
     Returns the discretized data at indices according to the specified strategy.
 
-    Args: 
+    Args:
         bins: Number of bins to use, bins in each feature, or bin edges.
         indices: The indices of the features to use for the binning.
         strategy: sklearn KBinsDiscretizer strategy to use.
     """
     selected = data[:, indices]
-    discretizer = KBinsDiscretizer(n_bins=bins, 
-                                   encode="ordinal", 
-                                   strategy=strategy)
+    discretizer = KBinsDiscretizer(n_bins=bins, encode="ordinal", strategy=strategy)
     return discretizer.fit_transform(selected)
 
-def encode(data: np.ndarray, 
-    indices: list[int], 
-    dimensions: int = 1
-) -> np.ndarray:
+
+def encode(data: np.ndarray, indices: list[int], dimensions: int = 1) -> np.ndarray:
     """
     Returns one hot encoding of the data at indices, assuming they are discrete.
 
-    Args: 
+    Args:
         indices: The indices of the features to use for the binning.
         dimensions: The number of dimensions to take the encoding in
     """

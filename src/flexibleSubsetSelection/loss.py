@@ -19,19 +19,21 @@ log = logger.setup(__name__)
 
 # --- Loss Function ------------------------------------------------------------
 
-class MultiCriterion():
+
+class MultiCriterion:
     """
     Create and apply multi-criterion loss functions from a set of objectives and
     corresponding weights for subset selection.
     """
 
-    def __init__(self, 
-        objectives: List[Callable], 
-        parameters: List[Dict[str, Any]], 
-        weights: (np.ndarray | None) = None
+    def __init__(
+        self,
+        objectives: List[Callable],
+        parameters: List[Dict[str, Any]],
+        weights: (np.ndarray | None) = None,
     ) -> None:
         """
-        Define a multi-criterion loss function with a set of objectives, 
+        Define a multi-criterion loss function with a set of objectives,
         weights, and parameters
 
         Args:
@@ -58,9 +60,13 @@ class MultiCriterion():
         # Generate the combined objective function
         self.calculate = partial(self._loss)
 
-        log.debug("Initialized a multi-criterion loss function with "
-                     "objectives: %s, parameters: %s, and weights: %s", 
-                     objectives, parameters, weights)
+        log.debug(
+            "Initialized a multi-criterion loss function with "
+            "objectives: %s, parameters: %s, and weights: %s",
+            objectives,
+            parameters,
+            weights,
+        )
 
     def _loss(self, dataset: Dataset, z: ArrayLike) -> float:
         """
@@ -69,7 +75,7 @@ class MultiCriterion():
 
         Args:
             dataset: The dataset object containing the data.
-            z: The indicator vector indicating which samples from the dataset 
+            z: The indicator vector indicating which samples from the dataset
                 are included in the subset.
         Returns:
             float: The computed value of the overall loss function.
@@ -86,7 +92,8 @@ class MultiCriterion():
 
             # retrieve any remaining parameters as objective parameters
             objectiveParameters = {
-                key: value for key, value in params.items() 
+                key: value
+                for key, value in params.items()
                 if key not in ["solveArray", "selectBy"]
             }
             objectiveLoss = weight * objective(subset, **objectiveParameters)
@@ -109,36 +116,36 @@ class MultiCriterion():
             parameters = ", ".join(parameters)
 
             if len(parameters) > 0:
-                objectives.append((f"{weight}*({objective.__name__}, "
-                                   f"{parameters})"))
+                objectives.append((f"{weight}*({objective.__name__}, {parameters})"))
             else:
                 objectives.append(f"{weight}*({objective.__name__})")
-        
+
         objectives = " + ".join(objectives)
         return f"Multi-criterion: {objectives}"
 
 
-class UniCriterion():
+class UniCriterion:
     """
-    Create and apply a unicriterion loss function from an objective, apply to a 
+    Create and apply a unicriterion loss function from an objective, apply to a
     particular data array for subset selection.
     """
 
-    def __init__(self, 
-        objective: Callable, 
-        solveArray: str = "array", 
-        selectBy: str = "row", 
-        **parameters: Any
+    def __init__(
+        self,
+        objective: Callable,
+        solveArray: str = "array",
+        selectBy: str = "row",
+        **parameters: Any,
     ) -> None:
         """
-        Define a loss function with an objective and optional parameters for 
+        Define a loss function with an objective and optional parameters for
         subset selection.
 
         Args:
             objective: The objective function to define the loss.
-            solveArray: The name of the array in dataset to use 
+            solveArray: The name of the array in dataset to use
                 for subset selection. Default is "array".
-            selectBy: The method to select subset from array. 
+            selectBy: The method to select subset from array.
             **parameters: Additional parameters of the objective function.
         """
         self.objective = objective
@@ -146,20 +153,24 @@ class UniCriterion():
         self.selectBy = selectBy
         self.parameters = parameters
 
-        log.info("Initialized a uni-criterion loss function with "
-                    "objective: %s, solve array: %s, selection method: %s, "
-                    "and parameters: %s", 
-                    objective.__name__, solveArray, selectBy, parameters)
-
+        log.info(
+            "Initialized a uni-criterion loss function with "
+            "objective: %s, solve array: %s, selection method: %s, "
+            "and parameters: %s",
+            objective.__name__,
+            solveArray,
+            selectBy,
+            parameters,
+        )
 
     def calculate(self, dataset: Dataset, z: ArrayLike) -> float:
         """
-        Compute the loss by evaluating the objective with its parameters on the 
+        Compute the loss by evaluating the objective with its parameters on the
         selected subset.
 
         Args:
             dataset: The dataset object containing the data.
-            z: The indicator vector indicating which samples from the dataset 
+            z: The indicator vector indicating which samples from the dataset
                 are included in the subset.
 
         Returns:
@@ -168,7 +179,7 @@ class UniCriterion():
         array = getattr(dataset, self.solveArray)
         subset = select(array, z, selectBy=self.selectBy)
         return self.objective(subset, **self.parameters)
-    
+
     def __str__(self) -> str:
         """
         Return a string representation of the UniCriterion loss function.
@@ -178,7 +189,7 @@ class UniCriterion():
             if callable(value):
                 parameters.append(value.__name__)
         if self.solveArray != "array":
-                parameters.append(self.solveArray)
+            parameters.append(self.solveArray)
         parameters = ", ".join(parameters)
 
         if parameters:

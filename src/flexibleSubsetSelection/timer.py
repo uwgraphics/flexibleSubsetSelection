@@ -3,13 +3,15 @@
 
 # Standard library
 from contextlib import ContextDecorator
-import time 
+import time
 
 
 # --- Timer --------------------------------------------------------------------
 class TimerError(Exception):
     """A custom exception used to report errors in Timer usage."""
+
     pass
+
 
 class Timer(ContextDecorator):
     def __init__(self):
@@ -29,7 +31,7 @@ class Timer(ContextDecorator):
 
         self.elapsedTime = time.perf_counter() - self._startTime
         self._startTime = None
-    
+
     def __enter__(self):
         """Start a new timer as a context manager."""
         self.start()

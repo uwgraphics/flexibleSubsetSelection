@@ -24,20 +24,22 @@ log = logger.setup(name=__name__)
 
 # --- Dataset Class ------------------------------------------------------------
 
+
 class Dataset:
     """
     A class for creating, storing, and processing datasets for subset selection.
     """
 
-    def __init__(self, 
+    def __init__(
+        self,
         name: str,
         data: pd.DataFrame | np.ndarray | str | Table | None = None,
-        randTypes: str | list[str] | None = None, 
-        size: tuple[int, int] | None = None, 
-        interval: tuple[float, float] = (1.0, 5.0), 
-        features: list[str] | None = None, 
-        seed: int | np.random.Generator | None = None,  
-        backend: str = "duckdb"
+        randTypes: str | list[str] | None = None,
+        size: tuple[int, int] | None = None,
+        interval: tuple[float, float] = (1.0, 5.0),
+        features: list[str] | None = None,
+        seed: int | np.random.Generator | None = None,
+        backend: str = "duckdb",
     ) -> None:
         """
         Initialize a dataset by providing data or by random data generation.
@@ -50,14 +52,14 @@ class Dataset:
                 methods: "uniform", "binary", "categories", "normal",
                 "multimodal", "skew", "blobs".
             size: The size of the dataset to generate (rows, columns).
-            interval: The interval range for generating or scaling data. 
+            interval: The interval range for generating or scaling data.
             features: The list of column features to assign to the dataset.
-            seed: The random seed or NumPy generator for reproducibility. 
-            backend: The Ibis backend for execution. (e.g., "duckdb", "pandas", 
+            seed: The random seed or NumPy generator for reproducibility.
+            backend: The Ibis backend for execution. (e.g., "duckdb", "pandas",
                 "polars", "pyspark", etc.).
 
         Raises:
-            ValueError: If neither data, nor a random generation method and size 
+            ValueError: If neither data, nor a random generation method and size
             of data are specified.
         """
         self.name = name
@@ -67,20 +69,21 @@ class Dataset:
         self._metrics = []
 
         # Create Ibis connection with backend
-        if isinstance(data, Table): # Data specified as an Ibis table
+        if isinstance(data, Table):  # Data specified as an Ibis table
             self._table = data
             self._conn = data._client
         else:
             self._connect(backend)
 
         # Load data if specified as a DataFrame, ndarray, or string
-        if data is not None: # initialize with provided data
+        if data is not None:  # initialize with provided data
             if isinstance(data, pd.DataFrame):
                 if features is not None:
                     missingFeatures = set(features) - set(data.columns)
                     if missingFeatures:
-                        raise ValueError(f"Features not found in data: " 
-                                         f"{missingFeatures}")
+                        raise ValueError(
+                            f"Features not found in data: {missingFeatures}"
+                        )
                     data = data[features]
                 self._table = self._conn.create_table(name, data)
                 self._array = data.to_numpy()
@@ -103,16 +106,15 @@ class Dataset:
 
         # Initialize dataset with random data generation
         else:
-            if randTypes is None: 
+            if randTypes is None:
                 raise ValueError("No data or random generation type specified.")
             elif isinstance(randTypes, str):
                 randTypes = [randTypes]
             if size is None:
                 raise ValueError("No size of data to generate specified.")
-            
+
             df = pd.concat(
-                [generate.random(i, size, interval, seed) for i in randTypes], 
-                axis=1
+                [generate.random(i, size, interval, seed) for i in randTypes], axis=1
             )
 
             if features is not None:
@@ -137,7 +139,7 @@ class Dataset:
             cols = len(self._table.schema().names)
             self._size = (rows, cols)
         return self._size
-    
+
     @property
     def features(self) -> list[str]:
         """
@@ -156,66 +158,65 @@ class Dataset:
             log.info("Materializing the dataset array.")
             self._array = self._transform(self._table.to_pandas().to_numpy())
         return self._array
-    
+
     @property
     def transforms(self) -> list[str]:
         """
         Publicly expose the list of available transformation stages.
-        
+
         Returns:
-            A list of transform names, e.g., ['original', 'scale', 'discretize'].
+            A list of transform names.
         """
         return [t["name"] for t in self._transforms]
-    
+
     @property
     def metrics(self) -> list[str]:
         """
-        Publicly expose the list of computed and cached metrics
-        
+        Publicly expose the list of computed and cached metrics.
+
         Returns:
-            A list of metric names, e.g., [].
+            A list of metric names.
         """
         return [t["name"] for t in self._metrics]
-    
+
     def compute(self, **parameters: Any) -> None:
         """
         Compute a metric on the dataset be specifying a name and function.
 
         Args:
-            parameters: Keyword arguments where the key is the name of the 
+            parameters: Keyword arguments where the key is the name of the
                 metric function and the value is either the function (for
-                functions that don't require parameters), or a tuple where the 
-                first element is the function and the second element is a 
+                functions that don't require parameters), or a tuple where the
+                first element is the function and the second element is a
                 dictionary of additional parameters.
         """
         for name, function in parameters.items():
             try:
-                if isinstance(function, tuple): # with parameters
+                if isinstance(function, tuple):  # with parameters
                     func, params = function
                     setattr(self, name, func(self.array, **params))
                 else:
                     setattr(self, name, function(self.array))
-                self._metrics.append({"name": name, 
-                                      "func": function, 
-                                      "params": parameters})
+                self._metrics.append(
+                    {"name": name, "func": function, "params": parameters}
+                )
                 log.info("Data preprocessed with function '%s'.", name)
             except Exception as e:
                 errorMessage = "Error applying function '%s'." % name
                 log.exception(errorMessage)
                 raise RuntimeError(errorMessage) from e
 
-    def scale(self, 
-        interval: tuple | None = None, 
-        features: list | None = None
+    def scale(
+        self, interval: tuple | None = None, features: list | None = None
     ) -> None:
         """
         Scale dataset features to a specified interval.
 
         Args:
             interval: The interval to scale the data to.
-            features: The features to scale. All features will be scaled if 
+            features: The features to scale. All features will be scaled if
                 unspecified.
-        
+
         Raises:
             ValueError: if features are not found
         """
@@ -230,29 +231,32 @@ class Dataset:
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
 
-        self._transforms.append({
-            "name": "scaled",
-            "func": transform.scale,
-            "params": {"interval": interval, "indices": indices},
-        })
+        self._transforms.append(
+            {
+                "name": "scaled",
+                "func": transform.scale,
+                "params": {"interval": interval, "indices": indices},
+            }
+        )
         self._array = None
         log.info("Queued scale for %s to interval %s.", features, interval)
 
-    def discretize(self, 
-        bins: int | ArrayLike, 
-        features: list | None = None, 
-        strategy: Literal["uniform", "quantile", "kmeans"] = "uniform"
+    def discretize(
+        self,
+        bins: int | ArrayLike,
+        features: list | None = None,
+        strategy: Literal["uniform", "quantile", "kmeans"] = "uniform",
     ) -> None:
         """
         Modifies the specified features of the dataset by discretizing them into
         bins according to the given strategy.
 
-        Args: 
+        Args:
             bins: Number of bins to use, bins in each feature, or bin edges.
             features: List of features to use for the binning. All features will
                 be encoded if unspecified.
             strategy: sklearn KBinsDiscretizer strategy to use.
-        
+
         Raises:
             ValueError: if dimensions or features do not match dimensionality
         """
@@ -264,28 +268,27 @@ class Dataset:
             errorMessage = "Feature not found in discretize."
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
-        
-        self._transforms.append({
-            "name": "discretized",
-            "func": transform.discretize,
-            "params": {"bins": bins, "indices": indices, "strategy": strategy},
-        })
+
+        self._transforms.append(
+            {
+                "name": "discretized",
+                "func": transform.discretize,
+                "params": {"bins": bins, "indices": indices, "strategy": strategy},
+            }
+        )
         self._array = None
         log.info("Dataset discretized by %s with %s bins.", strategy, bins)
 
-    def encode(self, 
-        features: list | None = None, 
-        dimensions: int = 1
-    ) -> None:
+    def encode(self, features: list | None = None, dimensions: int = 1) -> None:
         """
         Modifies the specified features of the dataset by one hot encoding them,
         assuming they are discrete.
 
-        Args: 
-            features: The features to use for the binning. All features will be 
+        Args:
+            features: The features to use for the binning. All features will be
                 encoded if unspecified.
             dimensions: The number of dimensions to take the encoding in
-        
+
         Raises:
             ValueError: if features are not found
         """
@@ -297,26 +300,25 @@ class Dataset:
             errorMessage = "Feature not found in encode."
             log.exception(errorMessage)
             raise RuntimeWarning(errorMessage) from e
-        
-        self._transforms.append({
-            "name": "encoded",
-            "func": transform.encode,
-            "params": {"indices": indices, "dimensions": dimensions},
-        })
+
+        self._transforms.append(
+            {
+                "name": "encoded",
+                "func": transform.encode,
+                "params": {"indices": indices, "dimensions": dimensions},
+            }
+        )
         self._array = None
         log.info("Data one-hot encoded with %d dimensions.", dimensions)
 
-    def save(self, 
-        fileType: str = "csv", 
-        directory: str | Path | None = None
-    ) -> None:
+    def save(self, fileType: str = "csv", directory: str | Path | None = None) -> None:
         """
         Saves the dataset eagerly to disk.
 
         Args:
             fileType: The file format to save the data: csv or parquet
             directory: The target directory in which to save the file.
-        
+
         Raises:
             ValueError: If an unsupported file type is specified.
         """
@@ -344,23 +346,26 @@ class Dataset:
         """
         Return a detailed string representation of the Dataset object.
         """
-        return (f"Dataset(name='{self.name}', size={self.size}, "
-                f"features={self.features})")
+        return (
+            f"Dataset(name='{self.name}', size={self.size}, features={self.features})"
+        )
 
     def __str__(self) -> str:
         """
         Return a user-friendly string representation of the Dataset object.
         """
-        return (f"Dataset {self.name}: {self.size[0]} rows x "
-                f"{self.size[1]} features "
-                f"{self.features[:3]}{'...' if len(self.features) > 3 else ''}")
-    
+        return (
+            f"Dataset {self.name}: {self.size[0]} rows x "
+            f"{self.size[1]} features "
+            f"{self.features[:3]}{'...' if len(self.features) > 3 else ''}"
+        )
+
     def __len__(self) -> int:
         """
         Returns the number of rows in the dataset
         """
         return self.size[0]
-    
+
     def __getattr__(self, attr):
         """
         Returns the specified transformed version of the dataset if specified.
@@ -380,11 +385,11 @@ class Dataset:
 
         Args:
             backend: The name of the Ibis backend: "duckdb", "pandas", etc.
-        
+
         Raises:
             ValueError: If the backend is not available or the connection fails
         """
-        try: 
+        try:
             connectionFunction = getattr(getattr(ibis, backend), "connect")
         except AttributeError:
             raise ValueError(
@@ -400,8 +405,8 @@ class Dataset:
         """
         Evaluate transformations up to and including the specified transform.
 
-        Args: 
-            name: The name of the transform to evaluate to if specified. If 
+        Args:
+            name: The name of the transform to evaluate to if specified. If
                 None, the full transformation pipeline is evaluated.
         """
         if name == "original" or len(self._transforms) == 1:
@@ -410,7 +415,7 @@ class Dataset:
             try:
                 array = t["func"](array, **t["params"])
             except Exception as e:
-                errorMessage = "Transform '%s' failed." % t['name']
+                errorMessage = "Transform '%s' failed." % t["name"]
                 log.exception(errorMessage)
                 raise RuntimeError(errorMessage) from e
             if name and t["name"] == name:

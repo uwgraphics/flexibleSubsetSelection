@@ -16,25 +16,28 @@ log = logger.setup(__name__)
 
 # --- Utility ------------------------------------------------------------------
 
-def randomSample(datasetSize: tuple, subsetSize: int, 
-                 seed: (int | np.random.Generator | None) = None):
+
+def randomSample(
+    datasetSize: tuple, subsetSize: int, seed: (int | np.random.Generator | None) = None
+):
     """
     Randomly sample from dataset by generating random indices to create subset
 
     Args:
         datasetSize: The dataset dimensions sizes
         subsetSize: The number of points to sample for the subset
-        seed: The random seed or generator for reproducibility. 
-    
+        seed: The random seed or generator for reproducibility.
+
     Returns:
         z (array): indicator vector of included items in the subset
         indices (array): indices in the dataset of included items in the subset
-    """  
+    """
     rng = np.random.default_rng(seed)
     indices = rng.choice(datasetSize[0], size=subsetSize, replace=False)
     z = np.zeros(datasetSize[0])
     z[indices] = 1
     return z, indices
+
 
 def createEnvironment(outputFlag: int = 0):
     """
@@ -47,30 +50,30 @@ def createEnvironment(outputFlag: int = 0):
     environment.setParam("LogFile", "../data/gurobiLog.log")
     # environment.setParam("ConcurrentMIP", 2)
     environment.start()
-    
+
     return environment
 
-def optimize(objective, constraints, environment, solver, 
-             log_file='gurobi_log.txt'):
+
+def optimize(objective, constraints, environment, solver, log_file="gurobi_log.txt"):
     """
-    Sets up a cvxpy problem with given objective and constraints and solves it 
+    Sets up a cvxpy problem with given objective and constraints and solves it
     using the specified solver.
 
     Args:
         objective: cvxpy Objective object defining the optimization objective.
-        constraints: List of cvxpy Constraint objects defining the optimization 
+        constraints: List of cvxpy Constraint objects defining the optimization
             constraints.
-        environment: Optional. Environment or settings required by the solver, 
+        environment: Optional. Environment or settings required by the solver,
             particularly when using external solvers like Gurobi.
-        solver: Optional. Solver to be used for solving the optimization 
+        solver: Optional. Solver to be used for solving the optimization
             problem.
         log_file: Optional. File path for Gurobi log. Defaults to 'gurobi_log.txt'.
 
-    Returns: problem: The cvxpy Problem object after solving, which contains 
+    Returns: problem: The cvxpy Problem object after solving, which contains
         solution information and other attributes.
     """
     problem = cp.Problem(objective, constraints)
-    
+
     if solver == cp.GUROBI:
         problem.solve(solver=solver, env=environment, logfile=log_file)
     else:
@@ -78,14 +81,17 @@ def optimize(objective, constraints, environment, solver,
 
     return problem
 
+
 # --- Algorithms ---------------------------------------------------------------
 
-def bestOfRandom(dataset, 
-    lossFunction: (UniCriterion | MultiCriterion), 
-    subsetSize: int, 
-    minLoss: int = 0, 
-    maxIterations: int = None, 
-    seed: (int | np.random.Generator | None) = None,  
+
+def bestOfRandom(
+    dataset,
+    lossFunction: (UniCriterion | MultiCriterion),
+    subsetSize: int,
+    minLoss: int = 0,
+    maxIterations: int = None,
+    seed: (int | np.random.Generator | None) = None,
     selectBy: str = "row",
 ) -> tuple[np.ndarray, float]:
     """
@@ -108,12 +114,13 @@ def bestOfRandom(dataset,
     return z, minLoss
 
 
-def averageOfRandom(dataset, 
-    lossFunction: (UniCriterion | MultiCriterion), 
-    subsetSize: int, 
-    minLoss: int = 0, 
-    maxIterations: int = None, 
-    seed: (int | np.random.Generator | None) = None,  
+def averageOfRandom(
+    dataset,
+    lossFunction: (UniCriterion | MultiCriterion),
+    subsetSize: int,
+    minLoss: int = 0,
+    maxIterations: int = None,
+    seed: (int | np.random.Generator | None) = None,
     selectBy: str = "row",
 ) -> tuple[np.ndarray, float]:
     """
@@ -126,19 +133,21 @@ def averageOfRandom(dataset,
     losses = [lossFunction.calculate(dataset, z)]
 
     for i in range(maxIterations):
-        curZ = randomSample(dataset.size,subsetSize, seed)[0]
+        curZ = randomSample(dataset.size, subsetSize, seed)[0]
         losses.append(lossFunction.calculate(dataset, curZ))
 
     avgLoss = np.mean(losses)
 
     return z, avgLoss
 
-def worstOfRandom(dataset, 
-    lossFunction: (UniCriterion | MultiCriterion), 
-    subsetSize: int, 
-    minLoss: int = 0, 
-    maxIterations: int = None, 
-    seed: (int | np.random.Generator | None) = None,  
+
+def worstOfRandom(
+    dataset,
+    lossFunction: (UniCriterion | MultiCriterion),
+    subsetSize: int,
+    minLoss: int = 0,
+    maxIterations: int = None,
+    seed: (int | np.random.Generator | None) = None,
     selectBy: str = "row",
 ) -> tuple[np.ndarray, float]:
     """
@@ -160,8 +169,15 @@ def worstOfRandom(dataset,
     return z, maxLoss
 
 
-def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
-               seed=None, callback=None):
+def greedySwap(
+    dataset,
+    lossFunction,
+    subsetSize,
+    minLoss=0,
+    maxIterations=None,
+    seed=None,
+    callback=None,
+):
     """
     A greedy algorithm with a greedy swap heuristic for subset selection.
 
@@ -172,7 +188,7 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
         solveArray (string): The desired array to use during solving
         minLoss (float): The minimum loss value to stop iterations
         maxIterations (int, optional): Maximum number of iterations
-        seed (int, rng, optional): The random seed or NumPy rng for random 
+        seed (int, rng, optional): The random seed or NumPy rng for random
             generation and reproducibility
 
     Returns:
@@ -193,7 +209,7 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
         log.debug("Iteration %s/%s: Loss %s.", i, maxIterations, loss)
         if callback:
             callback(iterations, loss)
-        
+
         if i not in indices:
             zSwapBest = np.copy(z)
             lossSwapBest = loss
@@ -202,8 +218,8 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
             for loc, j in enumerate(indices):
                 iterations += 1
                 zSwap = np.copy(z)
-                zSwap[i] = 1 # add the new datapoint
-                zSwap[j] = 0 # remove the old datapoint
+                zSwap[i] = 1  # add the new datapoint
+                zSwap[j] = 0  # remove the old datapoint
                 indicesSwap = np.copy(indices)
                 indicesSwap[loc] = i
                 lossSwap = lossFunction.calculate(dataset, zSwap)
@@ -220,12 +236,21 @@ def greedySwap(dataset, lossFunction, subsetSize, minLoss=0, maxIterations=None,
             if loss == minLoss:
                 break
 
-    return z, loss # return indicator and final loss
+    return z, loss  # return indicator and final loss
 
-def greedyMinSubset(dataset, lossFunction, epsilon, minError=0, 
-                    maxIterations=None, seed=None, initialSize=1, callback=None):
+
+def greedyMinSubset(
+    dataset,
+    lossFunction,
+    epsilon,
+    minError=0,
+    maxIterations=None,
+    seed=None,
+    initialSize=1,
+    callback=None,
+):
     """
-    A greedy algorithm for subset selection to minimize the size of the subset 
+    A greedy algorithm for subset selection to minimize the size of the subset
     such that lossFunction(subset) <= epsilon.
 
     Args:
@@ -235,7 +260,7 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
         solveArray (string): The desired array to use during solving
         minError (float): The minimum error value to stop iterations
         maxIterations (int, optional): Maximum number of iterations
-        seed (int, rng, optional): The random seed or NumPy rng for random 
+        seed (int, rng, optional): The random seed or NumPy rng for random
             generation and reproducibility
         initialSize (int, optional): Initial size of the subset
         callback (function, optional): A callback function for loss values
@@ -255,18 +280,18 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
 
     # Set the random seed
     np.random.seed(seed)
-    
+
     # Initialize the indicator vector z
     z = np.zeros(datasetLength, dtype=int)
-    
+
     # Randomly select initial points
     selected_indices = np.random.choice(datasetLength, initialSize, replace=False)
     z[selected_indices] = 1
-    
+
     # Set of available indices
     available_indices = set(range(datasetLength))
     available_indices.difference_update(selected_indices)
-    
+
     # Initial loss calculation
     current_loss = lossFunction.calculate(dataset, z)
     error = abs(current_loss - epsilon)
@@ -275,22 +300,28 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
         maxIterations = datasetLength
 
     while iterations < maxIterations:
-        log.debug("Iteration: %s, Loss: %s, Error: %s, Subset Size: %s.", iterations, current_loss, error, np.sum(z))
+        log.debug(
+            "Iteration: %s, Loss: %s, Error: %s, Subset Size: %s.",
+            iterations,
+            current_loss,
+            error,
+            np.sum(z),
+        )
         if callback:
             callback(iterations, current_loss, subsetSize=np.sum(z))
-        
+
         # Check if error is less than or equal to epsilon
         if error <= epsilon:
             # Attempt to drop one or more points while keeping error below epsilon
             dropped = False
             new_selected_indices = []  # Create a list to store new selected indices
-            
+
             for index in selected_indices:
                 if z[index] == 1:  # Ensure the index is currently selected
                     z[index] = 0
                     new_loss = lossFunction.calculate(dataset, z)
                     new_error = abs(new_loss - epsilon)
-                    
+
                     if new_error <= epsilon:
                         current_loss = new_loss
                         error = new_error
@@ -298,12 +329,14 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
                         dropped = True
                     else:
                         z[index] = 1  # Revert the change
-                        new_selected_indices.append(index)  # Keep index in selected list
+                        new_selected_indices.append(
+                            index
+                        )  # Keep index in selected list
                 else:
                     new_selected_indices.append(index)  # Keep index in selected list
-            
+
             selected_indices = np.array(new_selected_indices)
-            
+
             if dropped:
                 consecutive_stable_iterations = 0  # Reset consecutive stable iterations
                 continue  # Continue optimizing if dropped points successfully
@@ -313,7 +346,7 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
                 # Check if subset size has not changed for a while
                 if consecutive_stable_iterations >= 5:
                     break
-        
+
         best_index = None
         best_error = error
 
@@ -321,11 +354,11 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
             z[index] = 1  # try adding this element
             new_loss = lossFunction.calculate(dataset, z)
             new_error = abs(new_loss - epsilon)
-            
+
             if new_error < best_error:
                 best_error = new_error
                 best_index = index
-            
+
             z[index] = 0  # revert the addition
 
         if best_index is not None:
@@ -338,10 +371,19 @@ def greedyMinSubset(dataset, lossFunction, epsilon, minError=0,
 
     return z, error
 
-def greedyMixed(dataset, lossFunction, weight=1.0, minError=0, 
-                maxIterations=None, seed=None, initialSize=1, callback=None):
+
+def greedyMixed(
+    dataset,
+    lossFunction,
+    weight=1.0,
+    minError=0,
+    maxIterations=None,
+    seed=None,
+    initialSize=1,
+    callback=None,
+):
     """
-    A greedy algorithm to minimize the total 
+    A greedy algorithm to minimize the total
     loss = weight * subsetSize + lossFunction.calculate().
 
     Args:
@@ -350,7 +392,7 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
         weight (float): Weight parameter for the subset size
         minError (float): The minimum error value to stop iterations
         maxIterations (int, optional): Maximum number of iterations
-        seed (int, rng, optional): The random seed or NumPy rng for random 
+        seed (int, rng, optional): The random seed or NumPy rng for random
             generation and reproducibility
         initialSize (int, optional): Initial size of the subset
 
@@ -361,23 +403,26 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
     # Extract dataset size
     datasetLength = dataset.size[0]
 
-    log.debug("Solving to minimize total loss = %s * subsetSize + lossFunction.calculate()", weight)
+    log.debug(
+        "Solving to minimize total loss = %s * subsetSize + lossFunction.calculate()",
+        weight,
+    )
     iterations = 0
 
     # Set the random seed
     np.random.seed(seed)
-    
+
     # Initialize the indicator vector z
     z = np.zeros(datasetLength, dtype=int)
-    
+
     # Randomly select initial points
     selected_indices = np.random.choice(datasetLength, initialSize, replace=False)
     z[selected_indices] = 1
-    
+
     # Set of available indices
     available_indices = set(range(datasetLength))
     available_indices.difference_update(selected_indices)
-    
+
     # Initial loss calculation
     current_loss = lossFunction.calculate(dataset, z)
     total_loss = weight * np.sum(z) + current_loss
@@ -387,10 +432,15 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
         maxIterations = datasetLength
 
     while iterations < maxIterations:
-        log.debug("Iteration %s: Total Loss %s, Subset Size %s", iterations, total_loss, np.sum(z))
+        log.debug(
+            "Iteration %s: Total Loss %s, Subset Size %s",
+            iterations,
+            total_loss,
+            np.sum(z),
+        )
         if callback:
             callback(iterations, total_loss, subsetSize=np.sum(z))
-        
+
         # Check if error is less than or equal to minError
         if error <= minError:
             break
@@ -402,12 +452,11 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
             z[index] = 1  # try adding this element
             new_loss = lossFunction.calculate(dataset, z)
             new_total_loss = weight * np.sum(z) + new_loss
-            
 
             if new_total_loss < best_total_loss:
                 best_total_loss = new_total_loss
                 best_index = index
-            
+
             z[index] = 0  # revert the addition
 
         if best_index is not None:
@@ -418,7 +467,7 @@ def greedyMixed(dataset, lossFunction, weight=1.0, minError=0,
             error = abs(total_loss)  # update error
         else:
             break
-        
+
         iterations += 1
 
     return z, total_loss  # return indicator vector, and total loss
@@ -436,81 +485,80 @@ def optimizeCoverage(dataset, lossFunction, environment, subsetSize):
     Returns:
         z (numpy.ndarray): Binary array indicating the selected subset.
         problem.value (float): The value of the optimization problem.
-    """ 
+    """
     datasetLength, oneHotWidth = dataset.dataArray.shape
-    z = cp.Variable(datasetLength, boolean=True) # subset decision vector
-    t = cp.Variable(oneHotWidth) # L1 norm linearization vector
-    ones = np.ones(oneHotWidth) # ones vector indicating every bin
+    z = cp.Variable(datasetLength, boolean=True)  # subset decision vector
+    t = cp.Variable(oneHotWidth)  # L1 norm linearization vector
+    ones = np.ones(oneHotWidth)  # ones vector indicating every bin
     subsetCoverage = cp.Variable(oneHotWidth)
     dataset_coverage = np.minimum(ones, np.sum(dataset.dataArray, axis=0))
 
     # L1 norm linearization constraints and s constraint
-    constraints = [cp.sum(z) == subsetSize,
-                   subsetCoverage <= 1,
-                   subsetCoverage <= z@dataset.dataArray,
-                   -t <= dataset_coverage - subsetCoverage,
-                   t >= dataset_coverage - subsetCoverage]
+    constraints = [
+        cp.sum(z) == subsetSize,
+        subsetCoverage <= 1,
+        subsetCoverage <= z @ dataset.dataArray,
+        -t <= dataset_coverage - subsetCoverage,
+        t >= dataset_coverage - subsetCoverage,
+    ]
 
-    objective = cp.Minimize(cp.sum(t)) # objective is maximizing the sum of t
-    problem = optimize(objective=objective, 
-                       constraints=constraints, 
-                       environment=environment)
+    objective = cp.Minimize(cp.sum(t))  # objective is maximizing the sum of t
+    problem = optimize(
+        objective=objective, constraints=constraints, environment=environment
+    )
 
     return z.value.astype(int), problem.value
 
 
 def optimizeSum(dataset, lossFunction, environment, w, solver):
-
     datasetLength = len(dataset.dataArray)
-    z = cp.Variable(datasetLength, boolean=True) # subset decision vector
+    z = cp.Variable(datasetLength, boolean=True)  # subset decision vector
     constraints = []
 
-    objective = cp.Maximize(-w[0]*cp.sum(z) + w[1]*cp.sum(z@dataset.dataArray))
+    objective = cp.Maximize(-w[0] * cp.sum(z) + w[1] * cp.sum(z @ dataset.dataArray))
     problem = optimize(objective, constraints, environment, solver)
 
     return z.value.astype(int), problem.value
 
 
-def optimizeEMD(dataset, lossFunction, environment, subsetSize, 
-                solver=cp.GUROBI):
-
+def optimizeEMD(dataset, lossFunction, environment, subsetSize, solver=cp.GUROBI):
     datasetLength = len(dataset.dataArray)
-    z = cp.Variable(datasetLength, boolean=True) # subset decision vector
+    z = cp.Variable(datasetLength, boolean=True)  # subset decision vector
     constraints = [cp.sum(z) == subsetSize]
-    subset = np.array(z@dataset.dataArray)
+    subset = np.array(z @ dataset.dataArray)
 
     objective = cp.Minimize(ot.emd2([], [], ot.dist(subset, dataset.dataArray)))
     problem = optimize(objective, constraints, environment, solver)
 
     return z.value.astype(int), problem.value
 
+
 def optimizeDistribution(dataset, lossFunction, environment, subsetSize):
-
     datasetLength, oneHotWidth = dataset.dataArray.shape
-    z = cp.Variable(datasetLength, boolean=True) # subset decision vector
-    t = cp.Variable(oneHotWidth) # L1 norm linearization vector
+    z = cp.Variable(datasetLength, boolean=True)  # subset decision vector
+    t = cp.Variable(oneHotWidth)  # L1 norm linearization vector
 
-    oneHotMeans = np.sum(dataset.dataArray, axis=0)/datasetLength
-    subsetMeans = (z@dataset.dataArray)/subsetSize
+    oneHotMeans = np.sum(dataset.dataArray, axis=0) / datasetLength
+    subsetMeans = (z @ dataset.dataArray) / subsetSize
 
-    constraints = [cp.sum(z) == subsetSize,
-                   t >= 0,
-                   -t <= subsetMeans - oneHotMeans,
-                   t >= subsetMeans - oneHotMeans]
+    constraints = [
+        cp.sum(z) == subsetSize,
+        t >= 0,
+        -t <= subsetMeans - oneHotMeans,
+        t >= subsetMeans - oneHotMeans,
+    ]
 
     objective = cp.Minimize(cp.sum(t))
-    problem = optimize(objective, 
-                       constraints, 
-                       environment, 
-                       solver=cp.GUROBI)
+    problem = optimize(objective, constraints, environment, solver=cp.GUROBI)
 
     return z.value.astype(int), problem.value
 
-def sinkhorn(dataset, lossFunction, distanceMatrix, subsetSize, environment, 
-             lambdaReg=0.1):
-    
+
+def sinkhorn(
+    dataset, lossFunction, distanceMatrix, subsetSize, environment, lambdaReg=0.1
+):
     datasetLength = dataset.size[0]
-    
+
     # Decision variables
     z = cp.Variable(datasetLength, boolean=True)  # Subset selection vector
     gamma = cp.Variable((datasetLength, datasetLength), nonneg=True)
@@ -523,13 +571,10 @@ def sinkhorn(dataset, lossFunction, distanceMatrix, subsetSize, environment,
         cp.sum(z) == subsetSize,
         cp.sum(gamma, axis=0) == 1 / datasetLength,
         cp.sum(gamma, axis=1) == z / subsetSize,
-        gamma >= 0
+        gamma >= 0,
     ]
 
     # Formulate the problem
-    problem = optimize(objective, 
-                       constraints, 
-                       environment, 
-                       solver=cp.GUROBI)
+    problem = optimize(objective, constraints, environment, solver=cp.GUROBI)
 
     return z.value.astype(int), problem.value

@@ -19,24 +19,26 @@ log = logger.setup(name=__name__)
 
 # --- Subset Class -------------------------------------------------------------
 
+
 class Subset:
     """
     A class for creating, storing, and handling subsets of datasets.
     """
 
-    def __init__(self, 
-        dataset: Dataset, 
-        z: np.ndarray, 
+    def __init__(
+        self,
+        dataset: Dataset,
+        z: np.ndarray,
         solveTime: (float | None) = None,
         loss: (float | None) = None,
-        selectBy: str = "row"
+        selectBy: str = "row",
     ) -> None:
         """
         Initialize a subset with a Dataset object and the indicator vector z.
 
         Args:
             dataset: The dataset from which to take the subset.
-            z: The indicator vector indicating which samples from the dataset 
+            z: The indicator vector indicating which samples from the dataset
                 are included in the subset.
             solveTime: The computation time to solve for the subset in seconds.
             loss: The calculated loss of the subset.
@@ -57,11 +59,11 @@ class Subset:
             self.size = (length,)
         else:
             self.size = (length, dataset.size[1])
-        
+
         self.solveTime = solveTime
         self.loss = loss
         log.info("Created %s.", self)
-    
+
     @property
     def array(self) -> np.ndarray:
         """
@@ -70,7 +72,7 @@ class Subset:
         if not hasattr(self, "_array"):
             self._array = select(self.dataset.array, self.z, self.selectBy)
         return self._array
-    
+
     @property
     def transforms(self) -> list[str]:
         """
@@ -79,11 +81,12 @@ class Subset:
         return self.dataset.transforms
 
     @classmethod
-    def load(cls, 
-        name: str, 
-        dataset: Dataset, 
-        fileType: str = "pickle",  
-        directory: (str | Path) = "../data"
+    def load(
+        cls,
+        name: str,
+        dataset: Dataset,
+        fileType: str = "pickle",
+        directory: (str | Path) = "../data",
     ) -> "Subset":
         """
         Class method to load a saved subset from file.
@@ -113,10 +116,11 @@ class Subset:
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
 
-    def save(self, 
-        fileType: str = "pickle", 
+    def save(
+        self,
+        fileType: str = "pickle",
         directory: (str | Path) = "../data",
-        name: str = None
+        name: str = None,
     ) -> None:
         """
         Save the subset data to a file.
@@ -124,7 +128,7 @@ class Subset:
         Args:
             fileType: The file format to save the data: 'pickle' or 'csv'.
             directory: Directory to save the file in.
-        
+
         Raises:
             ValueError: If an unsupported file type is specified.
         """
@@ -174,7 +178,7 @@ class Subset:
         if self.loss is not None:
             string += f"with {round(self.loss, 2)} loss"
         return string
-    
+
     def __getattr__(self, attr: str) -> np.ndarray:
         """
         Returns the specified transformed view of the dataset, subsetted by z.

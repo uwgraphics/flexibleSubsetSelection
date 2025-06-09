@@ -9,22 +9,24 @@ from sklearn.datasets import make_blobs
 
 # --- Random Dataset Generation ------------------------------------------------
 
-def random(randType: str, 
-    size: tuple, 
-    interval: tuple, 
-    seed: (int | np.random.Generator | None) = None
+
+def random(
+    randType: str,
+    size: tuple,
+    interval: tuple,
+    seed: (int | np.random.Generator | None) = None,
 ) -> pd.DataFrame:
     """
     Generate random data based on the specified random generation method.
 
     Args:
-        randType: The method or methods for random data generation. Supported 
+        randType: The method or methods for random data generation. Supported
             methods: "uniform", "binary", "categorical", "normal", "multimodal",
             "skew", and "blobs".
         size: The size of the dataset to create for random dataset generation or
             the size of the data (num rows, num columns).
         interval: The interval specifying the range of random values.
-        seed: The random seed or generator for reproducibility. 
+        seed: The random seed or generator for reproducibility.
 
     Returns: A DataFrame containing the generated random data.
 
@@ -50,8 +52,10 @@ def random(randType: str,
     else:
         raise ValueError(f"unknown random generation method: {randType}")
 
-def uniform(size: tuple, interval: tuple, 
-            seed: (int | np.random.Generator| None) = None) -> pd.DataFrame:
+
+def uniform(
+    size: tuple, interval: tuple, seed: (int | np.random.Generator | None) = None
+) -> pd.DataFrame:
     """
     Generate random data from a uniform distribution using numpy.
 
@@ -66,10 +70,12 @@ def uniform(size: tuple, interval: tuple,
     data = rng.uniform(interval[0], interval[1], size=size)
     return pd.DataFrame(data)
 
-def binary(size: tuple, 
-           seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
+
+def binary(
+    size: tuple, seed: (int | np.random.Generator | None) = None
+) -> pd.DataFrame:
     """
-    Generate random binary data points of bernoulli trials using numpy where 
+    Generate random binary data points of bernoulli trials using numpy where
     each feature has a random probability p.
 
     Args:
@@ -79,14 +85,16 @@ def binary(size: tuple,
     Returns: The randomly generated binary data.
     """
     rng = np.random.default_rng(seed)
-    probabilities = rng.random(size=size[1]) # probabilities in features
+    probabilities = rng.random(size=size[1])  # probabilities in features
     data = rng.binomial(1, probabilities, size=size)
     return pd.DataFrame(data)
 
-def categories(size: tuple, interval: tuple, 
-               seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
+
+def categories(
+    size: tuple, interval: tuple, seed: (int | np.random.Generator | None) = None
+) -> pd.DataFrame:
     """
-    Generate random categorical data points using numpy with a random number of 
+    Generate random categorical data points using numpy with a random number of
     categories and a random probability p in interval.
 
     Args:
@@ -104,10 +112,12 @@ def categories(size: tuple, interval: tuple,
         data[:, i] = rng.choice(categories[i], size=size[0], p=probabilities)
     return pd.DataFrame(data)
 
-def normal(size: tuple, interval: tuple, 
-           seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
+
+def normal(
+    size: tuple, interval: tuple, seed: (int | np.random.Generator | None) = None
+) -> pd.DataFrame:
     """
-    Generate random data from a normal distribution using numpy centered on 
+    Generate random data from a normal distribution using numpy centered on
     random mean and with random standard deviation.
 
     Args:
@@ -118,17 +128,22 @@ def normal(size: tuple, interval: tuple,
     Returns: The randomly generated normally distributed data.
     """
     rng = np.random.default_rng(seed)
-    mu = rng.uniform(interval[0], interval[1], size=size[1]) # random μ's
-    sigma = rng.uniform(interval[0], interval[1], size=size[1]) # random σ's
+    mu = rng.uniform(interval[0], interval[1], size=size[1])  # random μ's
+    sigma = rng.uniform(interval[0], interval[1], size=size[1])  # random σ's
 
     data = sigma * rng.standard_normal(size) + mu
     return pd.DataFrame(data)
 
-def multimodal(size: tuple, interval: tuple, sigmaInterval: tuple = (0.1, 3), 
-               seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
+
+def multimodal(
+    size: tuple,
+    interval: tuple,
+    sigmaInterval: tuple = (0.1, 3),
+    seed: (int | np.random.Generator | None) = None,
+) -> pd.DataFrame:
     """
     Generate random data from multimodal distributions using numpy with a random
-    number of normal distributions centered on random means and standard 
+    number of normal distributions centered on random means and standard
     deviations.
 
     Args:
@@ -145,7 +160,7 @@ def multimodal(size: tuple, interval: tuple, sigmaInterval: tuple = (0.1, 3),
 
     data = np.zeros(size)
     for i in range(size[1]):
-        mu = rng.uniform(interval[0], interval[1], size=modes[i]) # random μ's
+        mu = rng.uniform(interval[0], interval[1], size=modes[i])  # random μ's
         sigma = rng.uniform(sigmaInterval[0], sigmaInterval[1], size=modes[i])
 
         splitsRange = np.arange(1, size[0])
@@ -154,16 +169,20 @@ def multimodal(size: tuple, interval: tuple, sigmaInterval: tuple = (0.1, 3),
         for j in range(modes[i]):
             start = splits[j]
             end = splits[j + 1]
-            distribution = rng.normal(loc=mu[j], scale=sigma[j], size=end-start)
+            distribution = rng.normal(loc=mu[j], scale=sigma[j], size=end - start)
             data[start:end, i] = distribution
             start = end
 
     return pd.DataFrame(data)
 
-def skew(size: tuple, interval: tuple = (-5, 5), 
-         seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
+
+def skew(
+    size: tuple,
+    interval: tuple = (-5, 5),
+    seed: (int | np.random.Generator | None) = None,
+) -> pd.DataFrame:
     """
-    Generate random data from skewed distributions using scipy with random 
+    Generate random data from skewed distributions using scipy with random
     skewness parameter.
 
     Args:
@@ -178,17 +197,20 @@ def skew(size: tuple, interval: tuple = (-5, 5),
     data = np.zeros((size[1], size[0]))
     for i in range(size[1]):
         a = rng.uniform(interval[0], interval[1], size=1)
-        data[i, :] = scipy.stats.skewnorm.rvs(a, 
-                                              size=size[0], 
-                                              random_state=seed)
+        data[i, :] = scipy.stats.skewnorm.rvs(a, size=size[0], random_state=seed)
 
     return pd.DataFrame(data.T)
 
-def blobs(size: tuple, interval: tuple, numClusters: int = 6, 
-          sigmaInterval: tuple = (0.1, 3), 
-          seed: (int | np.random.Generator | None) = None) -> pd.DataFrame:
+
+def blobs(
+    size: tuple,
+    interval: tuple,
+    numClusters: int = 6,
+    sigmaInterval: tuple = (0.1, 3),
+    seed: (int | np.random.Generator | None) = None,
+) -> pd.DataFrame:
     """
-    Generate random data points using sklearn with numClusters blobs and with 
+    Generate random data points using sklearn with numClusters blobs and with
     random means and standard deviations.
 
     Args:
@@ -203,10 +225,12 @@ def blobs(size: tuple, interval: tuple, numClusters: int = 6,
     rng = np.random.default_rng(seed)
     sigma = rng.uniform(sigmaInterval[0], sigmaInterval[1], size=numClusters)
 
-    data = make_blobs(n_samples = size[0], 
-                      n_features = size[1], 
-                      centers = numClusters, 
-                      cluster_std = sigma, 
-                      center_box = interval)
-    
+    data = make_blobs(
+        n_samples=size[0],
+        n_features=size[1],
+        centers=numClusters,
+        cluster_std=sigma,
+        center_box=interval,
+    )
+
     return pd.DataFrame(data[0])

@@ -8,6 +8,7 @@ from . import escapes
 
 # --- Screens ------------------------------------------------------------------
 
+
 class Screen:
     def __init__(self, title):
         """create a blank screen with a title"""
@@ -22,29 +23,29 @@ class Screen:
         self.lineToWrite = 2
         self.buttons = []
         self.selected = 0
-        self.width, self.height = os.get_terminal_size() # get height and width
+        self.width, self.height = os.get_terminal_size()  # get height and width
 
         innerWidth = self.width - 2
-        remainingWidth = self.width - 4 - outer - innerSpace*2 - len(self.title)
+        remainingWidth = self.width - 4 - outer - innerSpace * 2 - len(self.title)
 
         # line 1
-        self.content = f'{" "*(outer + 1)}' # title box left indent
-        self.content += f'╔{"═"*(len(self.title) + innerSpace*2)}╗' # box top
-        self.content += f'{" "*(remainingWidth + 1)}\n' # title box right indent
+        self.content = f"{' ' * (outer + 1)}"  # title box left indent
+        self.content += f"╔{'═' * (len(self.title) + innerSpace * 2)}╗"  # box top
+        self.content += f"{' ' * (remainingWidth + 1)}\n"  # title box right indent
 
         # line 2
-        self.content += f'┌{"─"*outer}' # title box left indent
-        self.content += f'║{" "*innerSpace}{self.title}{" "*innerSpace}║'
-        self.content += f'{"─"*remainingWidth}┐\n' # title box right indent
+        self.content += f"┌{'─' * outer}"  # title box left indent
+        self.content += f"║{' ' * innerSpace}{self.title}{' ' * innerSpace}║"
+        self.content += f"{'─' * remainingWidth}┐\n"  # title box right indent
 
         # line 3
-        self.content += f'│{" "*outer}' # title box left indent
-        self.content += f'╚{"═"*(len(self.title) + innerSpace*2)}╝' # box base
-        self.content += f'{" "*remainingWidth}│\n' # title box right indent
+        self.content += f"│{' ' * outer}"  # title box left indent
+        self.content += f"╚{'═' * (len(self.title) + innerSpace * 2)}╝"  # box base
+        self.content += f"{' ' * remainingWidth}│\n"  # title box right indent
 
         # remaining lines
-        self.content += f'│{" "*innerWidth}│\n'*(self.height - 4) # box sides
-        self.content += f'└{"─"*innerWidth}┘' # screen box base
+        self.content += f"│{' ' * innerWidth}│\n" * (self.height - 4)  # box sides
+        self.content += f"└{'─' * innerWidth}┘"  # screen box base
 
     def writeLine(self, text, x=10, y=None):
         """write text on screen at column x line y"""
@@ -52,29 +53,29 @@ class Screen:
             y = self.lineToWrite
         self.lineToWrite += 1
 
-        start = (3 + y)*(self.width + 1) + x + 1
+        start = (3 + y) * (self.width + 1) + x + 1
         end = start + len(text)
         self.content = f"{self.content[:start]}{text}{self.content[end:]}"
 
-    def writeLog(self, text=''):
+    def writeLog(self, text=""):
         """write specified text to log space or clear by not specifying text"""
-        text = ' '*(50-len(text)) + text
+        text = " " * (50 - len(text)) + text
         x = self.width - 56
         y = self.height - 6
-        self.writeLine(text, x, y)   # write log message
-        self.print()                 # print updated screen
+        self.writeLine(text, x, y)  # write log message
+        self.print()  # print updated screen
 
     def addButton(self, button):
         """save a Button to the Screen and write it's text to the Screen"""
         self.buttons.append(button)
-        if not button.y:    # if button does not have y position,
-            button.y = self.lineToWrite # place it on next available line
+        if not button.y:  # if button does not have y position,
+            button.y = self.lineToWrite  # place it on next available line
         button.write(self)
 
     def addBackButton(self, function):
-        start = (self.height - 5)*(self.width + 1)
+        start = (self.height - 5) * (self.width + 1)
         end = start + self.width
-        divider = '─'*(self.width - 2)
+        divider = "─" * (self.width - 2)
         self.content = f"{self.content[:start]}├{divider}┤{self.content[end:]}"
         self.addButton(Button("ᐊ Back", function, x=4, y=self.height - 6))
 
@@ -83,21 +84,21 @@ class Screen:
         self.clear()
         pos = 0
         for index, button in enumerate(self.buttons):
-            start = (3 + button.y)*(self.width + 1) + button.x
+            start = (3 + button.y) * (self.width + 1) + button.x
             end = start + len(button.text) + 2
-            print(self.content[pos:start], end='')
+            print(self.content[pos:start], end="")
             if index == self.selected:
                 escapes.changeColor(141, 211, 199, "background")
                 escapes.changeColor(0, 0, 0, "foreground")
-            print(self.content[start:end], end='')
+            print(self.content[start:end], end="")
             if button.__class__.__name__ == "TypedInput":
                 escapes.bold()
                 start = end
                 end += len(str(button.value)) + 2
-                print(self.content[start:end], end='')
+                print(self.content[start:end], end="")
             escapes.reset()
             pos = end
-        print(self.content[end:], end='')
+        print(self.content[end:], end="")
 
     def clear(self):
         """clear the terminal display"""
@@ -124,7 +125,9 @@ class Screen:
             button = self.buttons[self.selected]
             return button.activate(self)
 
+
 # --- Menus --------------------------------------------------------------------
+
 
 class Menu:
     def __init__(self, title, buttons):
@@ -134,29 +137,29 @@ class Menu:
     def write(self, screen):
         outerMargin = 8
         innerMargin = 2
-        width = screen.width - 2*outerMargin - 4
+        width = screen.width - 2 * outerMargin - 4
         remainingWidth = width - len(self.title) - innerMargin - 4
 
-        start = (2 + screen.lineToWrite)*(screen.width + 1)
+        start = (2 + screen.lineToWrite) * (screen.width + 1)
         content = screen.content[:start]
 
-        content += f"│{' '*(outerMargin + innerMargin + 1)}"
-        content += f"┌{'─'*(len(self.title) + 2)}┐"
-        content += f"{' '*(remainingWidth + outerMargin + 1)}│\n"
+        content += f"│{' ' * (outerMargin + innerMargin + 1)}"
+        content += f"┌{'─' * (len(self.title) + 2)}┐"
+        content += f"{' ' * (remainingWidth + outerMargin + 1)}│\n"
 
-        content += f"│{' '*outerMargin}"
-        content += f"┌{'─'*innerMargin}│ {self.title} │{'─'*remainingWidth}┐"
-        content += f"{' '*outerMargin}│\n"
+        content += f"│{' ' * outerMargin}"
+        content += f"┌{'─' * innerMargin}│ {self.title} │{'─' * remainingWidth}┐"
+        content += f"{' ' * outerMargin}│\n"
 
-        content += f"│{' '*outerMargin}│"
-        content += f"{' '*innerMargin}└{'─'*(len(self.title) + 2)}┘"
-        content += f"{' '*remainingWidth}│{' '*outerMargin}│\n"
+        content += f"│{' ' * outerMargin}│"
+        content += f"{' ' * innerMargin}└{'─' * (len(self.title) + 2)}┘"
+        content += f"{' ' * remainingWidth}│{' ' * outerMargin}│\n"
 
         for i in range(len(self.buttons)):
-            content += f"│{' '*outerMargin}│{' '*width}│{' '*outerMargin}│\n"
+            content += f"│{' ' * outerMargin}│{' ' * width}│{' ' * outerMargin}│\n"
 
-        content += f"│{' '*outerMargin}└{'─'*(width)}┘{' '*outerMargin}│\n"
-        end = (6 + len(self.buttons) + screen.lineToWrite)*(screen.width + 1)
+        content += f"│{' ' * outerMargin}└{'─' * (width)}┘{' ' * outerMargin}│\n"
+        end = (6 + len(self.buttons) + screen.lineToWrite) * (screen.width + 1)
         content += screen.content[end:]
         screen.content = content
         screen.lineToWrite += 2
@@ -164,7 +167,9 @@ class Menu:
             screen.addButton(button)
         screen.lineToWrite += 3
 
+
 # --- Buttons ------------------------------------------------------------------
+
 
 class Button:
     def __init__(self, text, function, x=14, y=None):
@@ -179,6 +184,7 @@ class Button:
     def activate(self, *_):
         self.function()
         return None, None
+
 
 class TypedInput(Button):
     def __init__(self, text, parameter, value):
@@ -199,12 +205,12 @@ class TypedInput(Button):
     def activate(self, screen):
         """handle typed input"""
         value = self.value
-        self.value = ' '*len(value)
+        self.value = " " * len(value)
         self.write(screen)
         screen.clear()
         screen.print()
 
-        self.value = ''
+        self.value = ""
         self.write(screen)
         screen.clear()
         screen.print()
@@ -217,7 +223,7 @@ class TypedInput(Button):
                         break
                     elif k == "backspace":
                         self.value = self.value[:-1]
-                        self.value += ' '
+                        self.value += " "
                         self.write(screen)
                         screen.print()
                         self.value = self.value[:-1]
@@ -226,7 +232,7 @@ class TypedInput(Button):
                     self.write(screen)
                     screen.print()
 
-        if self.value == '':
+        if self.value == "":
             self.value = value
             self.write(screen)
             screen.clear()
@@ -235,6 +241,7 @@ class TypedInput(Button):
         if self.function == str.isalpha:
             self.value = f"'{self.value}'"
         return self.parameter, self.value
+
 
 class BooleanButton(Button):
     def __init__(self, text, function, parameter, value):
@@ -259,6 +266,7 @@ class BooleanButton(Button):
         screen.print()
         self.function(self.parameter, self.value)
         return None, None
+
 
 class RadioButton(BooleanButton):
     def __init__(self, text, function, parameter, option, value):

@@ -6,10 +6,12 @@ import seaborn as sns
 
 # --- Color --------------------------------------------------------------------
 
+
 class Color:
     """
     Create and store color palettes and color bars for use in visualizations
     """
+
     def __init__(self, palette: dict | None = None):
         """
         Initialize the class with a custom or default palette
@@ -24,36 +26,37 @@ class Color:
                 "orange": "#fb8072",
                 "yellow": "#fdb462",
                 "blue": "#8dadd3",
-                "grey": "#eff0f2"
+                "grey": "#eff0f2",
             }
         else:
             self.palette = palette
 
     def __getitem__(self, color):
         """Returns a color value from the palette directly."""
-        return self.palette[color]  
+        return self.palette[color]
 
     def getPalette(self, names: list, colors: list) -> dict:
         """
-        Create a custom palette for a categorical set by assigning colors from 
+        Create a custom palette for a categorical set by assigning colors from
         the default set to a category name.
 
-        Args: 
+        Args:
             names: List of category names to assign a color to
             colors: corresponding colors to assign to the names
-        
+
         Returns: dictionary of names and colors
 
         Raises: ValueError if the names and color lists do not match
         """
-        
+
         if len(names) != len(colors):
             raise ValueError("Names and colors lists must be the same length.")
 
         return {name: self.palette[color] for name, color in zip(names, colors)}
-    
-    def getGradientPalette(self, color: str, number: int = 6, 
-                           type: str = "light") -> list:
+
+    def getGradientPalette(
+        self, color: str, number: int = 6, type: str = "light"
+    ) -> list:
         """
         Create a gradient palette based on a base color.
 
