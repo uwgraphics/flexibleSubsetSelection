@@ -3,12 +3,30 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
+name = "flexibleSubsetSelection"
+version = "0.2"
+authors = [{ name="Connor Bailey", email="cbbcbail@cs.wisc.edu" }]
 description = "A general strategy for organizing, designing, and prototyping subset selection for visualization by casting the problem in terms of multi-criterion optimization."
 readme = "README.md"
-name = "flexibleSubsetSelection"
-version = "0.1"
-authors = [{ name="Connor Bailey", email="cbbcbail@cs.wisc.edu" }]
+license = "MIT"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "cvxpy",
+    "gurobipy",
+    "ibis-framework[duckdb]"
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = ["flexibleSubsetSelection"]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter-book",
+    "pot"
+]

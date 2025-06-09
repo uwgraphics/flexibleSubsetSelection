@@ -50,7 +50,7 @@ def distanceMatrix(array: np.ndarray) -> np.ndarray:
     np.fill_diagonal(distances, np.inf)
     return distances
 
-def discreteDistribution(array: np.ndarray) -> float:
+def discreteDistribution(array: np.ndarray) -> np.ndarray:
     """
     Returns the discrete distribution of the one hot encoded array
     """

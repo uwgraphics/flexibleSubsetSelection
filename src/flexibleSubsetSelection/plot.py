@@ -17,7 +17,7 @@ import pandas as pd
 import seaborn as sns
 
 # Local files
-from .sets import Dataset, Subset
+from .subset import Dataset, Subset
 from .color import Color
 
 
@@ -195,9 +195,15 @@ def initialize(color, font: str = "Times New Roman", size: int = 42,
     else:
         plt.rcParams["axes.facecolor"] = faceColorAx
 
-def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None, 
-            subset: (Subset | None) = None, features: (list | None) = None, 
-            **parameters) -> None:
+def scatter(
+    ax: Axes, 
+    color: Color, 
+    dataset: Dataset | None = None, 
+    subset: Subset | None = None, 
+    features: list | None = None, 
+    transform: str | None = None,
+    **parameters
+) -> None:
     """
     Plot a scatterplot of data features on ax
 
@@ -207,6 +213,7 @@ def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None,
         dataset: The dataset to plot.
         subset: The subset to plot.
         features: The features to plot on x and y axes.
+        transform: The transformed dataset to plot
         **parameters: Additional parameters to pass to the plotting functions.
     
     Raises: 
@@ -216,7 +223,8 @@ def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None,
     if dataset is None and subset is None:
         raise ValueError("No dataset or subset specified.")
     if features is None:
-        features = list(range(dataset.size[1] if dataset else subset.size[1]))
+        features = (dataset or subset.dataset).features[:2]
+
     if len(features) == 3:
         if not hasattr(ax, "zaxis"):
             raise ValueError("3D data is specified but axis is not 3D.")
@@ -224,21 +232,33 @@ def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None,
         data = []
         colors = []
         if dataset is not None:
-            data.append(dataset.data)
-            colors.extend([color["green"]] * len(dataset.data))
+            if transform is None:
+                transformed = dataset
+            else:
+                transformed = getattr(dataset, transform)
+            data.append(transformed)
+            colors.extend([color["green"]] * dataset.size[0])
         if subset is not None:
-            data.append(subset.data)
-            colors.extend([color["darkGreen"]] * len(subset.data))
-        
-        data = np.concatenate(data, axis=0)
-        ax.scatter(data[:, 0], 
-                   data[:, 1], 
-                   data[:, 2], 
-                   c=colors,
-                   **parameters)
+            if transform is None:
+                transformed = subset.array
+            else:
+                transformed = getattr(subset, transform)
+            data.append(transformed)
+            colors.extend([color["darkGreen"]] * subset.size[0])
+
+        data = np.vstack(data)
+        names = (dataset or subset.dataset).features
+        x, y, z = [names.index(f) for f in features]
+        ax.scatter(data[:, x], data[:, y], data[:, z], c=colors, **parameters)
+
     else:
         if dataset is not None:
-            sns.scatterplot(data = dataset.data, 
+            if transform is None:
+                transformed = dataset.array
+            else:
+                transformed = getattr(dataset, transform)
+            df = pd.DataFrame(transformed, columns=dataset.features)
+            sns.scatterplot(data = df, 
                             x = features[0], 
                             y = features[1], 
                             color = color["green"], 
@@ -246,7 +266,12 @@ def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None,
                             zorder = 3,
                             **parameters)
         if subset is not None:
-            sns.scatterplot(data = subset.data, 
+            if transform is None:
+                transformed = subset.array
+            else:
+                transformed = getattr(subset, transform)
+            df = pd.DataFrame(transformed, columns=subset.dataset.features)
+            sns.scatterplot(data = df, 
                             x = features[0], 
                             y = features[1], 
                             color = color["darkGreen"], 
@@ -254,11 +279,15 @@ def scatter(ax: Axes, color: Color, dataset: (Dataset | None) = None,
                             zorder = 4,
                             **parameters)
 
-def parallelCoordinates(ax: Axes, color: Color, 
-                        dataset: (Dataset | None) = None, 
-                        subset: (Subset | None) = None, 
-                        dataLinewidth: float = 0.5, 
-                        subsetLinewidth: float = 1.5, **parameters) -> None:
+def parallelCoordinates(ax: Axes, 
+    color: Color, 
+    dataset: (Dataset | None) = None, 
+    subset: (Subset | None) = None, 
+    transform: str | None = None,
+    dataLinewidth: float = 0.5, 
+    subsetLinewidth: float = 1.5, 
+    **parameters
+) -> None:
     """
     Plot a parallel coordinates chart of dataset on ax
 
@@ -267,6 +296,7 @@ def parallelCoordinates(ax: Axes, color: Color,
         dataset: The dataset to plot
         color: A color object with the color palette to use
         subset: The subset to plot
+        transform: The transformed dataset to plot
         dataLinewidth: Linewidth for the main dataset
         subsetLinewidth: Linewidth for the subset
         **parameters: Additional parameters to pass to 
@@ -276,17 +306,24 @@ def parallelCoordinates(ax: Axes, color: Color,
     """
     if dataset is None and subset is None:
         raise ValueError("At least one of dataset or subset must be provided.")
-    
+
     if dataset is not None:
-        pd.plotting.parallel_coordinates(dataset.data.assign(set="dataset"),
+        df_dataset = pd.DataFrame(getattr(dataset, transform), 
+                                  columns=dataset.features)
+        df_dataset["set"] = "dataset"
+        pd.plotting.parallel_coordinates(df_dataset,
                                          "set",
                                          ax=ax,
                                          color=color.palette["green"],
                                          axvlines_kwds={'c': "white", "lw": 1},
                                          linewidth=dataLinewidth,
                                          **parameters)
+
     if subset is not None:
-        pd.plotting.parallel_coordinates(subset.data.assign(set="subset"),
+        df_subset = pd.DataFrame(getattr(subset, transform), 
+                                 columns=subset.dataset.features)
+        df_subset["set"] = "subset"
+        pd.plotting.parallel_coordinates(df_subset,
                                          "set",
                                          ax=ax,
                                          color=color.palette["darkGreen"],
@@ -295,9 +332,14 @@ def parallelCoordinates(ax: Axes, color: Color,
                                          alpha=1,
                                          **parameters)
 
-def histogram(ax: Axes, color: Color, dataset: (Dataset | None) = None, 
-              subset: (Subset | None) = None, numBins: int = 6, 
-              **parameters) -> None:
+def histogram(ax: Axes, 
+    color: Color, 
+    dataset: (Dataset | None) = None, 
+    subset: (Subset | None) = None, 
+    numBins: int = 6, 
+    transform: str | None = None,
+    **parameters
+) -> None:
     """
     Plot histograms of each feature side by side on ax with normalized subset 
     and dataset overlapping on common bins
@@ -308,23 +350,21 @@ def histogram(ax: Axes, color: Color, dataset: (Dataset | None) = None,
         dataset: The dataset to plot
         subset: The subset to plot
         numBins: The number of bins to bin the dataset
+        transform: The transformed dataset to plot
     
     Raises: ValueError: If neither a dataset or subset are provided
     """
-    
     if dataset is None and subset is None:
         raise ValueError("No dataset or subset specified")
 
-    if dataset is not None:
-        features = dataset.data.columns
-        numFeatures = len(features)
-        
+    if dataset is not None:        
         # Get the positions of each bar group
-        barPositions = range(0, numBins * numFeatures, numBins)
+        barPositions = range(0, numBins * dataset.size[1], numBins)
         
-        for i, feature in enumerate(features):
+        for i, feature in enumerate(dataset.features):
             # Plot the dataset histogram
-            datasetHist = np.histogram(dataset.data[feature], bins=numBins)
+            datasetHist = np.histogram(getattr(dataset, transform)[feature], 
+                                       bins=numBins)
             datasetHeights = datasetHist[0]
             
             # Adjust bar positions
@@ -333,7 +373,7 @@ def histogram(ax: Axes, color: Color, dataset: (Dataset | None) = None,
             ax.bar(positions, datasetHeights, width=1, 
                    color=color.palette["green"], alpha=0.5)
     if subset is not None:
-        features = subset.data.columns
+        features = subset.dataset.features
         numFeatures = len(features)
         
         # Get the positions of each bar group
@@ -341,8 +381,9 @@ def histogram(ax: Axes, color: Color, dataset: (Dataset | None) = None,
         
         for i, feature in enumerate(features):
             # Calculate histogram of subset normalized by subset size
-            subsetHist = np.histogram(subset.data[feature], bins=numBins)
-            subsetHeights = subsetHist[0] / len(subset.data) * len(dataset.data)
+            subsetHist = np.histogram(getattr(subset, transform)[feature], 
+                                      bins=numBins)
+            subsetHeights = subsetHist[0] / subset.size[0] * dataset.size[0]
             
             # Adjust bar positions
             positions = barPositions[i] + np.arange(numBins)

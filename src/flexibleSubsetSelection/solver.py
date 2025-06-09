@@ -10,7 +10,8 @@ import numpy as np
 
 # Local files
 from .loss import UniCriterion, MultiCriterion
-from .sets import Dataset, Subset
+from .subset import Subset
+from .dataset import Dataset
 from .timer import Timer
 from . import logger
 
@@ -37,8 +38,9 @@ class Solver():
             loss: The loss function class object.
             savePath: The path to the solver save file.
         """
-        log.debug("Initializing Solver with algorithm: %s, lossFunction: %s, savePath: %s", 
-                algorithm.__name__, lossFunction, savePath)
+        log.debug((f"Initializing Solver with algorithm: %s, "
+                  f"lossFunction: %s, savePath: %s"), 
+                  algorithm.__name__, lossFunction, savePath)
     
         self.algorithm = algorithm
         self.lossFunction = lossFunction
