@@ -71,6 +71,13 @@ class Subset:
         if not hasattr(self, "_array"):
             self._array = select(self.dataset.array, self.z, self.selectBy)
         return self._array
+    
+    @property
+    def transforms(self) -> list[str]:
+        """
+        Expose available dataset transformations (mirrored from dataset).
+        """
+        return self.dataset.transforms
 
     @classmethod
     def load(cls, 
@@ -165,3 +172,12 @@ class Subset:
         if self.loss is not None:
             string += f"with {round(self.loss, 2)} loss"
         return string
+    
+    def __getattr__(self, attr: str) -> np.ndarray:
+        """
+        Returns the specified transformed view of the dataset, subsetted by z.
+        """
+        if hasattr(self.dataset, attr):
+            data = getattr(self.dataset, attr)
+            return select(data, self.z, self.selectBy)
+        raise AttributeError(f"'Subset' object has no attribute '{attr}'")
