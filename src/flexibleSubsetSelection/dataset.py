@@ -2,7 +2,7 @@
 
 # Standard library
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal, Self
 
 # Third party
 import ibis
@@ -33,7 +33,7 @@ class Dataset:
     def __init__(
         self,
         name: str,
-        data: pd.DataFrame | np.ndarray | str | Table | None = None,
+        data: pd.DataFrame | np.ndarray | str | Path | Table | None = None,
         randTypes: str | list[str] | None = None,
         size: tuple[int, int] | None = None,
         interval: tuple[float, float] = (1.0, 5.0),
@@ -179,26 +179,30 @@ class Dataset:
         """
         return [t["name"] for t in self._metrics]
 
-    def compute(self, **parameters: Any) -> None:
+    def compute(self, **metric: Any) -> None:
         """
-        Compute a metric on the dataset be specifying a name and function.
+        Compute and cache a named metric on the dataset.
 
         Args:
-            parameters: Keyword arguments where the key is the name of the
-                metric function and the value is either the function (for
-                functions that don't require parameters), or a tuple where the
-                first element is the function and the second element is a
-                dictionary of additional parameters.
+            metric: Keyword arguments where each key is the name to assign the result,
+                and each value is either:
+                - a function (applied to the dataset array), or
+                - a tuple of (function, parameter dict) for parameterized metrics.
+
+        Raises:
+            RuntimeError: If any metric function fails.
         """
-        for name, function in parameters.items():
+        for name, function in metric.items():
             try:
                 if isinstance(function, tuple):  # with parameters
                     func, params = function
                     setattr(self, name, func(self.array, **params))
                 else:
+                    func = function
+                    params = {}
                     setattr(self, name, function(self.array))
                 self._metrics.append(
-                    {"name": name, "func": function, "params": parameters}
+                    {"name": name, "func": func, "params": params}
                 )
                 log.info("Data preprocessed with function '%s'.", name)
             except Exception as e:
@@ -206,9 +210,10 @@ class Dataset:
                 log.exception(errorMessage)
                 raise RuntimeError(errorMessage) from e
 
-    def scale(
-        self, interval: tuple | None = None, features: list | None = None
-    ) -> None:
+    def scale(self, 
+        interval: tuple[float, float] | None = None, 
+        features: list[str] | None = None
+    ) -> Self:
         """
         Scale dataset features to a specified interval.
 
@@ -240,13 +245,14 @@ class Dataset:
         )
         self._array = None
         log.info("Queued scale for %s to interval %s.", features, interval)
+        return self
 
     def discretize(
         self,
         bins: int | ArrayLike,
-        features: list | None = None,
+        features: list[str] | None = None,
         strategy: Literal["uniform", "quantile", "kmeans"] = "uniform",
-    ) -> None:
+    ) -> Self:
         """
         Modifies the specified features of the dataset by discretizing them into
         bins according to the given strategy.
@@ -269,17 +275,19 @@ class Dataset:
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
 
-        self._transforms.append(
-            {
-                "name": "discretized",
-                "func": transform.discretize,
-                "params": {"bins": bins, "indices": indices, "strategy": strategy},
-            }
-        )
+        self._transforms.append({
+            "name": "discretized",
+            "func": transform.discretize,
+            "params": {"bins": bins, "indices": indices, "strategy": strategy}
+        })
         self._array = None
         log.info("Dataset discretized by %s with %s bins.", strategy, bins)
+        return self
 
-    def encode(self, features: list | None = None, dimensions: int = 1) -> None:
+    def encode(self, 
+        features: list[str] | None = None, 
+        dimensions: int = 1
+    ) -> Self:
         """
         Modifies the specified features of the dataset by one hot encoding them,
         assuming they are discrete.
@@ -310,8 +318,12 @@ class Dataset:
         )
         self._array = None
         log.info("Data one-hot encoded with %d dimensions.", dimensions)
+        return self
 
-    def save(self, fileType: str = "csv", directory: str | Path | None = None) -> None:
+    def save(self, 
+        fileType: Literal["csv", "parquet"] = "csv", 
+        directory: str | Path | None = None
+    ) -> None:
         """
         Saves the dataset eagerly to disk.
 
@@ -343,21 +355,33 @@ class Dataset:
         log.info("Data successfully saved at '%s'.", filePath)
 
     def __repr__(self) -> str:
-        """
-        Return a detailed string representation of the Dataset object.
-        """
+        transform_str = (
+            f", transforms=original→{'→'.join(self.transforms[1:])}"
+            if len(self.transforms) > 1 else ""
+        )
         return (
-            f"Dataset(name='{self.name}', size={self.size}, features={self.features})"
+            f"Dataset(name='{self.name}', size={self.size}, features={self.features}"
+            f"{transform_str})"
         )
 
     def __str__(self) -> str:
-        """
-        Return a user-friendly string representation of the Dataset object.
-        """
+        transforms = self.transforms[1:]
+        if len(transforms) == 0:
+            transform_str = ""
+        elif len(transforms) == 1:
+            transform_str = f" {transforms[0]}"
+        elif len(transforms) == 2:
+            transform_str = f" {transforms[0]} and {transforms[1]}"
+        else:
+            transform_str = f" {', '.join(transforms[:-1])} and {transforms[-1]}"
+        
+        feature_preview = (
+            f"[{', '.join(map(str, self.features[:3]))}"
+            f"{', ...' if len(self.features) > 3 else ''}]"
+        )
         return (
-            f"Dataset {self.name}: {self.size[0]} rows x "
-            f"{self.size[1]} features "
-            f"{self.features[:3]}{'...' if len(self.features) > 3 else ''}"
+            f"Dataset {self.name}: {self.size[0]} rows x {self.size[1]} features "
+            f"{feature_preview}{transform_str}"
         )
 
     def __len__(self) -> int:
@@ -366,7 +390,7 @@ class Dataset:
         """
         return self.size[0]
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> np.ndarray:
         """
         Returns the specified transformed version of the dataset if specified.
 
@@ -401,7 +425,10 @@ class Dataset:
         except Exception as e:
             raise ValueError(f"Failed to connect to backend '{backend}': {e}")
 
-    def _transform(self, array: np.ndarray, name: str = None) -> np.ndarray:
+    def _transform(self, 
+        array: np.ndarray, 
+        name: str | None = None
+    ) -> np.ndarray:
         """
         Evaluate transformations up to and including the specified transform.
 

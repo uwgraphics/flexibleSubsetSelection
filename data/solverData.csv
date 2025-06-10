@@ -691,3 +691,24 @@ Uni-criterion: discreteCoverage,greedySwap,1000,10,10,0.10755854204762727,-52.0
 Uni-criterion: clusterCenters,worstOfRandom,1000,2,10,0.07008312497055158,13.101659062671818
 Uni-criterion: clusterCenters,bestOfRandom,1000,2,10,0.057536708016414195,3.380811607723391
 Uni-criterion: clusterCenters,greedySwap,1000,2,10,0.17902820801828057,0.933553389190652
+"Uni-criterion: preserveMetric, mean",worstOfRandom,1000,10,10,0.028686874953564256,8.355922227314053
+"Uni-criterion: preserveMetric, mean",bestOfRandom,1000,10,10,0.02764504199149087,1.783499747695131
+"Uni-criterion: preserveMetric, mean",greedySwap,1000,10,10,0.11666658299509436,0.7638323956314808
+"Uni-criterion: preserveMetric, range",worstOfRandom,1000,10,10,0.03518258302938193,109.1739278366993
+"Uni-criterion: preserveMetric, range",bestOfRandom,1000,10,10,0.028149708989076316,60.19812318263088
+"Uni-criterion: preserveMetric, range",greedySwap,1000,10,10,0.11194149998482317,25.22691876792681
+"Uni-criterion: preserveMetric, variance",worstOfRandom,1000,10,10,0.038422124984208494,34.21563683297368
+"Uni-criterion: preserveMetric, variance",bestOfRandom,1000,10,10,0.03215566696599126,6.8066566477590555
+"Uni-criterion: preserveMetric, variance",greedySwap,1000,10,10,0.15372108400333673,1.9856238975483214
+Uni-criterion: pcpLineCrossings,worstOfRandom,1000,10,10,0.15796037501422688,259.0
+Uni-criterion: pcpLineCrossings,bestOfRandom,1000,10,10,0.15021120896562934,141.0
+Uni-criterion: pcpLineCrossings,greedySwap,1000,10,10,1.30085408303421,80.0
+Uni-criterion: discreteCoverage,worstOfRandom,1000,10,10,0.08211762498831376,-25.0
+Uni-criterion: discreteCoverage,bestOfRandom,1000,10,10,0.027085083012934774,-41.0
+Uni-criterion: discreteCoverage,greedySwap,1000,10,10,0.10692799999378622,-51.0
+"Uni-criterion: preserveMetric, discreteDistribution",worstOfRandom,1000,10,10,0.03654554201057181,6.2780000000000005
+"Uni-criterion: preserveMetric, discreteDistribution",bestOfRandom,1000,10,10,0.028430750011466444,2.532
+"Uni-criterion: preserveMetric, discreteDistribution",greedySwap,1000,10,10,0.12024650000967085,1.638
+"Uni-criterion: preserveMetric, mean",worstOfRandom,1000,10,10,0.03142200002912432,153.034
+"Uni-criterion: preserveMetric, mean",bestOfRandom,1000,10,10,0.027861874958034605,25.505999999999993
+"Uni-criterion: preserveMetric, mean",greedySwap,1000,10,10,0.11954720900394022,23.31
