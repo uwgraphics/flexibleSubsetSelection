@@ -865,3 +865,49 @@ Uni-criterion: discreteCoverage,greedySwap,1000,10,10,0.10909849999006838,-53.0
 Uni-criterion: clusterCenters,worstOfRandom,1000,2,10,0.031251249951310456,11.94296674151492
 Uni-criterion: clusterCenters,bestOfRandom,1000,2,10,0.0309102910105139,3.131117691183114
 Uni-criterion: clusterCenters,greedySwap,1000,2,10,0.14132554200477898,0.8515134418163935
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,9,1.0092465000925586,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,11.675787084037438,-73.54901720342195
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,11.949646041030064,-87.07405420797922
+"Multi-criterion: 100*(earthMoversDistance) + 1*(distinctness, {parameters})",greedySwap,200,2,80,20.886310999980196,-32.99595193310639
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,10,1.101911916048266,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,12.548915125080384,-87.1368540324496
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,12.363243874977343,-75.16741454841912
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,10,1.1138361250050366,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,11.68273041700013,-83.871256491556
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,11.74232141696848,-80.50217334082964
+"Uni-criterion: preserveMetric, hull",greedyMinSubset,200,2,8,0.9331978330155835,0.0
+"Uni-criterion: sum, outlierness",greedySwap,200,2,40,12.02589845797047,-81.56767196413224
+"Uni-criterion: distinctness, distances",greedySwap,200,2,60,12.281094709062018,-79.877719904394
+"Multi-criterion: 100*(earthMoversDistance) + 1*(distinctness, {parameters})",greedySwap,200,2,80,20.629255708074197,-12.097089254988411
+"Multi-criterion: 10*(earthMoversDistance) + 1*(distinctness, {parameters})",greedySwap,200,2,80,21.542259666952305,-75.21712636704919
+"Multi-criterion: 1*(earthMoversDistance) + 1*(distinctness, {parameters})",greedySwap,200,2,80,23.227057250100188,-85.11577439368793
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,15,0.8100671250140294,-48.701056004301144
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,55,3.1878125000512227,-66.41349831139179
+"Uni-criterion: distinctness, distances",greedyMixed,200,2,70,4.180297708022408,-80.01733822497317
+"Uni-criterion: preserveMetric, mean",worstOfRandom,1000,10,10,0.02884470799472183,9.788590813102605
+"Uni-criterion: preserveMetric, mean",bestOfRandom,1000,10,10,0.028874625102616847,1.6977235093392282
+"Uni-criterion: preserveMetric, mean",greedySwap,1000,10,10,0.11823875003028661,0.5419822133628884
+"Uni-criterion: preserveMetric, range",worstOfRandom,1000,10,10,0.028802208020351827,107.66323732299564
+"Uni-criterion: preserveMetric, range",bestOfRandom,1000,10,10,0.027385875000618398,65.53523698721146
+"Uni-criterion: preserveMetric, range",greedySwap,1000,10,10,0.11456329096108675,22.754741709416475
+"Uni-criterion: preserveMetric, variance",worstOfRandom,1000,10,10,0.03232712496537715,39.9322887336744
+"Uni-criterion: preserveMetric, variance",bestOfRandom,1000,10,10,0.032317333039827645,5.51300098265434
+"Uni-criterion: preserveMetric, variance",greedySwap,1000,10,10,0.15503683406859636,2.092514407595941
+Uni-criterion: pcpLineCrossings,worstOfRandom,1000,10,10,0.15250650001689792,262.0
+Uni-criterion: pcpLineCrossings,bestOfRandom,1000,10,10,0.15675079205539078,149.0
+Uni-criterion: pcpLineCrossings,greedySwap,1000,10,10,1.3218833750579506,88.0
+Uni-criterion: discreteCoverage,worstOfRandom,1000,10,10,0.034286375041119754,-24.0
+Uni-criterion: discreteCoverage,bestOfRandom,1000,10,10,0.027270124992355704,-39.0
+Uni-criterion: discreteCoverage,greedySwap,1000,10,10,0.1104040410136804,-52.0
+"Uni-criterion: preserveMetric, discreteDistribution",worstOfRandom,1000,10,10,0.029594916966743767,6.063999999999999
+"Uni-criterion: preserveMetric, discreteDistribution",bestOfRandom,1000,10,10,0.029195333016104996,2.538
+"Uni-criterion: preserveMetric, discreteDistribution",greedySwap,1000,10,10,0.12152612500358373,1.5700000000000003
+"Uni-criterion: distinctness, distances",worstOfRandom,1000,2,10,0.03392354189418256,-5.423812343286248
+"Uni-criterion: distinctness, distances",bestOfRandom,1000,2,10,0.03365154203493148,-34.89536972068257
+"Uni-criterion: distinctness, distances",greedySwap,1000,2,10,0.185778749990277,-66.73645293749641
+"Uni-criterion: spread, distances",worstOfRandom,1000,2,10,0.035624500014819205,-184.65097283796163
+"Uni-criterion: spread, distances",bestOfRandom,1000,2,10,0.034956500050611794,-693.903983452083
+"Uni-criterion: spread, distances",greedySwap,1000,2,10,0.1513209999538958,-1247.4011531265355
+Uni-criterion: clusterCenters,worstOfRandom,1000,2,10,0.031602792092598975,15.55886381838417
+Uni-criterion: clusterCenters,bestOfRandom,1000,2,10,0.031512207933701575,4.046065629925078
+Uni-criterion: clusterCenters,greedySwap,1000,2,10,0.14174033398739994,1.1295780225671808

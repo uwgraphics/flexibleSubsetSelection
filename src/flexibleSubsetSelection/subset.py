@@ -11,7 +11,6 @@ import pickle
 # Local files
 from . import logger
 from .dataset import Dataset
-from .util import select
 
 # Setup logger
 log = logger.setup(name=__name__)
@@ -68,7 +67,7 @@ class Subset:
         Returns the subset of the dataset array.
         """
         if not hasattr(self, "_array"):
-            self._array = select(self.dataset.array, self.z, self.selectBy)
+            self._array = self.select(self.dataset.array, self.z, self.selectBy)
         return self._array
 
     @property
@@ -183,8 +182,29 @@ class Subset:
         """
         if hasattr(self.dataset, attr):
             data = getattr(self.dataset, attr)
-            return select(data, self.z, self.selectBy)
+            return self.select(data, self.z, self.selectBy)
         raise AttributeError(f"'Subset' object has no attribute '{attr}'")
 
     def __len__(self) -> int:
         return self.size[0]
+
+    @staticmethod
+    def select(array: np.ndarray, z: np.ndarray, selectBy: str) -> np.ndarray:
+        """
+        Selects a subset from array according to indicator z
+
+        Args:
+            array: The array to select from.
+            z: The indicator vector indicating which elements to select.
+            selectBy: The method to select the subset (row or matrix).
+
+        Returns: The selected subset from the array.
+
+        Raises: ValueError: If an unknown selection method is specified.
+        """
+        if selectBy == "row":
+            return array[z == 1]
+        elif selectBy == "matrix":
+            return array[z == 1][:, z == 1]
+        else:
+            raise ValueError("Unknown selection method specified.")

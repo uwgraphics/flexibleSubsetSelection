@@ -97,15 +97,16 @@ def bestOfRandom(
     """
     Determine the best loss of subset selection of n random samples
     """
+    rng = np.random.default_rng(seed)
     if maxIterations is None:
         maxIterations = dataset.size[0]
 
-    z = randomSample(dataset.size, subsetSize, seed)[0]
+    z = randomSample(dataset.size, subsetSize, rng)[0]
     minLoss = lossFunction(dataset, z)
 
     for i in range(maxIterations):
         log.debug("%s: %s", i, minLoss)
-        curZ = randomSample(dataset.size, subsetSize, seed)[0]
+        curZ = randomSample(dataset.size, subsetSize, rng)[0]
         curLoss = lossFunction(dataset, curZ)
         if curLoss < minLoss:
             z = curZ
@@ -126,14 +127,15 @@ def averageOfRandom(
     """
     Determine the average loss of subset selection of n random samples
     """
+    rng = np.random.default_rng(seed)
     if maxIterations is None:
         maxIterations = dataset.size[0]
 
-    z = randomSample(dataset.size, subsetSize, seed)[0]
+    z = randomSample(dataset.size, subsetSize, rng)[0]
     losses = [lossFunction(dataset, z)]
 
     for i in range(maxIterations):
-        curZ = randomSample(dataset.size, subsetSize, seed)[0]
+        curZ = randomSample(dataset.size, subsetSize, rng)[0]
         losses.append(lossFunction(dataset, curZ))
 
     avgLoss = np.mean(losses)
@@ -153,14 +155,15 @@ def worstOfRandom(
     """
     Determine the worst loss of subset selection of n random samples
     """
+    rng = np.random.default_rng(seed)
     if maxIterations is None:
         maxIterations = dataset.size[0]
 
-    z = randomSample(dataset.size, subsetSize, seed)[0]
+    z = randomSample(dataset.size, subsetSize, rng)[0]
     maxLoss = lossFunction(dataset, z)
 
     for i in range(maxIterations):
-        curZ = randomSample(dataset.size, subsetSize, seed)[0]
+        curZ = randomSample(dataset.size, subsetSize, rng)[0]
         curLoss = lossFunction(dataset, curZ)
         if curLoss > maxLoss:
             z = curZ
@@ -195,11 +198,12 @@ def greedySwap(
         z (array): Indicator vector of included items in the subset
         loss (float): The loss value of the final subset
     """
+    rng = np.random.default_rng(seed)
     log.debug("Solving for a subset of size %s.", subsetSize)
     iterations = 0
 
     # select random starting subset
-    z, indices = randomSample(dataset.size, subsetSize, seed)
+    z, indices = randomSample(dataset.size, subsetSize, rng)
     loss = lossFunction(dataset, z)
 
     if maxIterations is None:
@@ -279,7 +283,7 @@ def greedyMinSubset(
     consecutive_stable_iterations = 0
 
     # Set the random seed
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
 
     # Initialize the indicator vector z
     z = np.zeros(datasetLength, dtype=int)
@@ -408,9 +412,7 @@ def greedyMixed(
         weight,
     )
     iterations = 0
-
-    # Set the random seed
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
 
     # Initialize the indicator vector z
     z = np.zeros(datasetLength, dtype=int)

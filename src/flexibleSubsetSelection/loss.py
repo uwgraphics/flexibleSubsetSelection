@@ -1,7 +1,6 @@
 # --- Imports and Setup --------------------------------------------------------
 
 # Standard library
-from functools import partial
 from typing import Any, Callable, Dict, List
 
 # Third party
@@ -11,7 +10,7 @@ from numpy.typing import ArrayLike
 # Local files
 from . import logger
 from .dataset import Dataset
-from .util import select
+from .subset import Subset
 
 # Setup logger
 log = logger.setup(__name__)
@@ -57,9 +56,6 @@ class MultiCriterion:
         self.parameters = parameters
         self.weights = weights
 
-        # Generate the combined objective function
-        self.__call__ = partial(self._loss)
-
         log.debug(
             "Initialized a multi-criterion loss function with "
             "objectives: %s, parameters: %s, and weights: %s",
@@ -68,7 +64,7 @@ class MultiCriterion:
             weights,
         )
 
-    def _loss(self, dataset: Dataset, z: ArrayLike) -> float:
+    def __call__(self, dataset: Dataset, z: ArrayLike) -> float:
         """
         Compute the overall loss function by evaluating each objective function
         with its corresponding parameters and combining them with weights.
@@ -88,7 +84,7 @@ class MultiCriterion:
 
             # retrieve selectBy from attributes or default to row
             selectBy = params.get("selectBy", "row")
-            subset = select(array, z, selectBy=selectBy)
+            subset = Subset.select(array, z, selectBy=selectBy)
 
             # retrieve any remaining parameters as objective parameters
             objectiveParameters = {
@@ -116,8 +112,8 @@ class MultiCriterion:
             parameters = ", ".join(parameters)
 
             if len(parameters) > 0:
-                objectives.append((f"{weight}*({objective.__name__}, 
-                                  {parameters})"))
+                objectives.append((f"{weight}*({objective.__name__}, " 
+                                  "{parameters})"))
             else:
                 objectives.append(f"{weight}*({objective.__name__})")
 
@@ -178,7 +174,7 @@ class UniCriterion:
             float: The computed value of the loss function.
         """
         array = getattr(dataset, self.solveArray)
-        subset = select(array, z, selectBy=self.selectBy)
+        subset = Subset.select(array, z, selectBy=self.selectBy)
         return self.objective(subset, **self.parameters)
 
     def __str__(self) -> str:
