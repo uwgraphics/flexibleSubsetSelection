@@ -94,7 +94,10 @@ class Solver:
                  np.round(timer.elapsedTime, 2),
                  loss)
 
-        subset = Subset(dataset, z, timer.elapsedTime, loss)
+        subset = Subset(dataset=dataset, 
+                        z=z, 
+                        solveTime=timer.elapsedTime, 
+                        loss=loss)
 
         self.save(
             dataset.size,
