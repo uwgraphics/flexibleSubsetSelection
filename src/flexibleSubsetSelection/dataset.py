@@ -2,7 +2,7 @@
 
 # Standard library
 from pathlib import Path
-from typing import Any, Callable, Literal, Self
+from typing import Any, Literal, Self
 
 # Third party
 import ibis

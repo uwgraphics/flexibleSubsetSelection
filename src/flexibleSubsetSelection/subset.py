@@ -25,10 +25,10 @@ class Subset:
     A class for creating, storing, and handling subsets of datasets.
     """
 
-    def __init__(
-        self,
+    def __init__(self,
         dataset: Dataset,
         z: np.ndarray,
+        name: str = None,
         solveTime: (float | None) = None,
         loss: (float | None) = None,
         selectBy: str = "row",
@@ -50,6 +50,7 @@ class Subset:
         self.dataset = dataset
         self.z = z.astype(bool)
         self.selectBy = selectBy
+        self.name = name or f"{dataset.name}Subset"
 
         if len(z) != dataset.size[0]:
             raise ValueError("Length of z must match the length of dataset.")
@@ -83,7 +84,7 @@ class Subset:
     @classmethod
     def load(
         cls,
-        name: str,
+        fileName: str,
         dataset: Dataset,
         fileType: str = "pickle",
         directory: (str | Path) = "../data",
@@ -92,7 +93,7 @@ class Subset:
         Class method to load a saved subset from file.
 
         Args:
-            name: The filename (without extension).
+            fileName: The filename (without extension).
             dataset: The Dataset object the subset belongs to.
             fileType: 'pickle' or 'csv'.
             directory: Path to the folder.
@@ -100,7 +101,7 @@ class Subset:
         Returns:
             A new Subset instance.
         """
-        filePath = Path(directory) / f"{name}.{fileType}"
+        filePath = Path(directory) / f"{fileName}.{fileType}"
 
         try:
             if fileType == "pickle":
@@ -133,7 +134,7 @@ class Subset:
             ValueError: If an unsupported file type is specified.
         """
         if name is None:
-            name = f"{self.dataset.name}Subset"
+            name = self.name
         path = Path(directory)
         path.mkdir(parents=True, exist_ok=True)
         filePath = path / f"{name}.{fileType}"
@@ -156,7 +157,7 @@ class Subset:
         """
         Return a detailed string representation of the Subset object.
         """
-        parts = [f"Subset(name={self.dataset.name}, size={self.size})"]
+        parts = [f"Subset(name={self.name}, size={self.size})"]
         if self.solveTime is not None:
             parts.append(f"time={self.solveTime:.4f}s")
         if self.loss is not None:
@@ -172,7 +173,7 @@ class Subset:
         else:
             size = f"{self.size[0]}x{self.size[1]}"
 
-        string = f"Subset of {self.dataset.name} of size {size}"
+        string = f"Subset of {self.name} of size {size}"
         if self.solveTime is not None:
             string += f" in {round(self.solveTime, 2)}s "
         if self.loss is not None:

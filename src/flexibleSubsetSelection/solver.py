@@ -42,12 +42,11 @@ class Solver:
             loss: The loss function class object.
             savePath: The path to the solver save file.
         """
-        log.debug(
-            ("Initializing Solver with algorithm: %s, lossFunction: %s, savePath: %s"),
-            algorithm.__name__,
-            lossFunction,
-            savePath,
-        )
+        log.debug(("Initializing Solver with algorithm: %s, "
+                "lossFunction: %s, savePath: %s"),
+                algorithm.__name__,
+                lossFunction,
+                savePath)
 
         self.algorithm = algorithm
         self.lossFunction = lossFunction
@@ -87,13 +86,13 @@ class Solver:
         with Timer() as timer:
             z, loss = self.algorithm(dataset, self.lossFunction, **parameters)
 
-        log.info(
-            "Selected subset with '%s' and '%s' in %ss with %s loss.",
-            self.algorithm.__name__,
-            self.lossFunction,
-            np.round(timer.elapsedTime, 2),
-            loss,
-        )
+        log.info(("Selected subset from dataset '%s' with '%s' and '%s' "
+                 "in %ss with %s loss."),
+                 dataset.name,
+                 self.algorithm.__name__,
+                 self.lossFunction,
+                 np.round(timer.elapsedTime, 2),
+                 loss)
 
         subset = Subset(dataset, z, timer.elapsedTime, loss)
 
