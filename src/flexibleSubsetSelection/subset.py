@@ -56,10 +56,7 @@ class Subset:
             raise ValueError("Length of z must match the length of dataset.")
 
         length = int(np.sum(z))
-        if dataset.size[0] == 1:  # one-dimensional dataset
-            self.size = (length,)
-        else:
-            self.size = (length, dataset.size[1])
+        self.size = (length, dataset.size[1])
 
         self.solveTime = solveTime
         self.loss = loss

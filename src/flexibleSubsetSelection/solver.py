@@ -30,7 +30,7 @@ class Solver:
     def __init__(
         self,
         algorithm: Callable,
-        lossFunction: (UniCriterion | MultiCriterion | None) = None,
+        lossFunction: UniCriterion | MultiCriterion | None = None,
         savePath: str = "../data/solverData.csv",
     ) -> None:
         """
@@ -56,17 +56,13 @@ class Solver:
         try:
             with open(self.savePath, "x", newline="") as fp:
                 writer = csv.writer(fp)
-                writer.writerow(
-                    [
-                        "Loss Function",
-                        "Algorithm",
-                        "Dataset Length",
-                        "Dataset Width",
-                        "Subset Length",
-                        "Computation Time",
-                        "Loss",
-                    ]
-                )
+                writer.writerow(["Loss Function",
+                                 "Algorithm",
+                                 "Dataset Length",
+                                 "Dataset Width",
+                                 "Subset Length",
+                                 "Computation Time",
+                                 "Loss"])
         except FileExistsError:
             log.debug("Log file already exists at %s", self.savePath)
 
@@ -78,14 +74,20 @@ class Solver:
         the specified dataset.
 
         Args:
-            dataset: The dataset to solve by selecting a subset from.
+            dataset: The Dataset instance from which to select the subset.
             **parameters: Additional parameters for the algorithm function.
 
-        Returns: The resulting subset of the selection solved for.
+        Returns: The resulting Subset instance of the dataset.
         """
+        if self.lossFunction is None:
+            log.error("No loss function defined in solver.")
+            raise ValueError("No loss function defined for the solver.")
+
+        # Run algorithm on dataset to select a subset that minimizes loss
         with Timer() as timer:
             z, loss = self.algorithm(dataset, self.lossFunction, **parameters)
 
+        # Log information on completion of the solve 
         log.info(("Selected subset from dataset '%s' with '%s' and '%s' "
                  "in %ss with %s loss."),
                  dataset.name,
@@ -94,31 +96,36 @@ class Solver:
                  np.round(timer.elapsedTime, 2),
                  loss)
 
+        # Create Subset instance to store the selected subset
         subset = Subset(dataset=dataset, 
                         z=z, 
                         solveTime=timer.elapsedTime, 
                         loss=loss)
-
-        self.save(
-            dataset.size,
-            subset.size,
-            self.lossFunction,
-            self.algorithm.__name__,
-            timer.elapsedTime,
-            loss,
-        )
-
+        
+        # Save the performance data to file
+        try:
+            self.save(
+                dataset.size,
+                subset.size,
+                self.lossFunction,
+                self.algorithm.__name__,
+                timer.elapsedTime,
+                loss,
+            )
+            log.info("Saved solver performance data to %s.", self.savePath)
+        except Exception as e:
+            log.warning("Failed to save solver data: %s", e)
         return subset
 
     def save(
         self,
         datasetSize: tuple,
         subsetSize: tuple,
-        lossFunction: (UniCriterion | MultiCriterion),
+        lossFunction: UniCriterion | MultiCriterion,
         algorithm: str,
         computationTime: float,
         loss: float,
-    ):
+    ) -> None:
         # Write performance data to the save file
         with open(self.savePath, "a", newline="") as fp:
             writer = csv.writer(fp)
@@ -135,3 +142,17 @@ class Solver:
             )
 
         log.info("Saved solver performance data to %s.", self.savePath)
+
+    def __repr__(self) -> str:
+        """
+        Return a detailed string representation of the Solver object.
+        """
+        return (f"Solver(algorithm={self.algorithm.__name__}, "
+                f"loss={self.lossFunction}, savePath='{self.savePath}')")
+
+    def __str__(self) -> str:
+        """
+        Return a user-friendly string representation of the Solver object.
+        """
+        return (f"Solves algorithm {self.algorithm.__name__}, "
+                f" with {self.lossFunction} loss.")
