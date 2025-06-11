@@ -121,7 +121,7 @@ class Subset:
         name: str = None,
     ) -> None:
         """
-        Save the subset data to a file.
+        Save the subset to pickle for convenience or to csv for portability.
 
         Args:
             fileType: The file format to save the data: 'pickle' or 'csv'.

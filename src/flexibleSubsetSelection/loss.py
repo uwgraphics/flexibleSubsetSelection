@@ -30,7 +30,7 @@ class MultiCriterion:
         self,
         objectives: List[Callable],
         parameters: List[Dict[str, Any]],
-        weights: (np.ndarray | None) = None,
+        weights: np.ndarray | None = None,
     ) -> None:
         """
         Define a multi-criterion loss function with a set of objectives,
@@ -58,7 +58,7 @@ class MultiCriterion:
         self.weights = weights
 
         # Generate the combined objective function
-        self.calculate = partial(self._loss)
+        self.__call__ = partial(self._loss)
 
         log.debug(
             "Initialized a multi-criterion loss function with "
@@ -116,7 +116,8 @@ class MultiCriterion:
             parameters = ", ".join(parameters)
 
             if len(parameters) > 0:
-                objectives.append((f"{weight}*({objective.__name__}, {parameters})"))
+                objectives.append((f"{weight}*({objective.__name__}, 
+                                  {parameters})"))
             else:
                 objectives.append(f"{weight}*({objective.__name__})")
 
@@ -163,7 +164,7 @@ class UniCriterion:
             parameters,
         )
 
-    def calculate(self, dataset: Dataset, z: ArrayLike) -> float:
+    def __call__(self, dataset: Dataset, z: ArrayLike) -> float:
         """
         Compute the loss by evaluating the objective with its parameters on the
         selected subset.

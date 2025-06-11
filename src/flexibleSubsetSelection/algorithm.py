@@ -101,12 +101,12 @@ def bestOfRandom(
         maxIterations = dataset.size[0]
 
     z = randomSample(dataset.size, subsetSize, seed)[0]
-    minLoss = lossFunction.calculate(dataset, z)
+    minLoss = lossFunction(dataset, z)
 
     for i in range(maxIterations):
         log.debug("%s: %s", i, minLoss)
         curZ = randomSample(dataset.size, subsetSize, seed)[0]
-        curLoss = lossFunction.calculate(dataset, curZ)
+        curLoss = lossFunction(dataset, curZ)
         if curLoss < minLoss:
             z = curZ
             minLoss = curLoss
@@ -130,11 +130,11 @@ def averageOfRandom(
         maxIterations = dataset.size[0]
 
     z = randomSample(dataset.size, subsetSize, seed)[0]
-    losses = [lossFunction.calculate(dataset, z)]
+    losses = [lossFunction(dataset, z)]
 
     for i in range(maxIterations):
         curZ = randomSample(dataset.size, subsetSize, seed)[0]
-        losses.append(lossFunction.calculate(dataset, curZ))
+        losses.append(lossFunction(dataset, curZ))
 
     avgLoss = np.mean(losses)
 
@@ -157,11 +157,11 @@ def worstOfRandom(
         maxIterations = dataset.size[0]
 
     z = randomSample(dataset.size, subsetSize, seed)[0]
-    maxLoss = lossFunction.calculate(dataset, z)
+    maxLoss = lossFunction(dataset, z)
 
     for i in range(maxIterations):
         curZ = randomSample(dataset.size, subsetSize, seed)[0]
-        curLoss = lossFunction.calculate(dataset, curZ)
+        curLoss = lossFunction(dataset, curZ)
         if curLoss > maxLoss:
             z = curZ
             maxLoss = curLoss
@@ -200,7 +200,7 @@ def greedySwap(
 
     # select random starting subset
     z, indices = randomSample(dataset.size, subsetSize, seed)
-    loss = lossFunction.calculate(dataset, z)
+    loss = lossFunction(dataset, z)
 
     if maxIterations is None:
         maxIterations = dataset.size[0]
@@ -222,7 +222,7 @@ def greedySwap(
                 zSwap[j] = 0  # remove the old datapoint
                 indicesSwap = np.copy(indices)
                 indicesSwap[loc] = i
-                lossSwap = lossFunction.calculate(dataset, zSwap)
+                lossSwap = lossFunction(dataset, zSwap)
 
                 if lossSwap < lossSwapBest:
                     zSwapBest = np.copy(zSwap)
@@ -293,7 +293,7 @@ def greedyMinSubset(
     available_indices.difference_update(selected_indices)
 
     # Initial loss calculation
-    current_loss = lossFunction.calculate(dataset, z)
+    current_loss = lossFunction(dataset, z)
     error = abs(current_loss - epsilon)
 
     if maxIterations is None:
@@ -319,7 +319,7 @@ def greedyMinSubset(
             for index in selected_indices:
                 if z[index] == 1:  # Ensure the index is currently selected
                     z[index] = 0
-                    new_loss = lossFunction.calculate(dataset, z)
+                    new_loss = lossFunction(dataset, z)
                     new_error = abs(new_loss - epsilon)
 
                     if new_error <= epsilon:
@@ -352,7 +352,7 @@ def greedyMinSubset(
 
         for index in available_indices:
             z[index] = 1  # try adding this element
-            new_loss = lossFunction.calculate(dataset, z)
+            new_loss = lossFunction(dataset, z)
             new_error = abs(new_loss - epsilon)
 
             if new_error < best_error:
@@ -364,7 +364,7 @@ def greedyMinSubset(
         if best_index is not None:
             z[best_index] = 1
             available_indices.remove(best_index)
-            current_loss = lossFunction.calculate(dataset, z)
+            current_loss = lossFunction(dataset, z)
             error = abs(current_loss - epsilon)
 
         iterations += 1
@@ -384,7 +384,7 @@ def greedyMixed(
 ):
     """
     A greedy algorithm to minimize the total
-    loss = weight * subsetSize + lossFunction.calculate().
+    loss = weight * subsetSize + lossFunction().
 
     Args:
         dataset (object): The Dataset class object
@@ -404,7 +404,7 @@ def greedyMixed(
     datasetLength = dataset.size[0]
 
     log.debug(
-        "Solving to minimize total loss = %s * subsetSize + lossFunction.calculate()",
+        "Solving to minimize total loss = %s * subsetSize + lossFunction()",
         weight,
     )
     iterations = 0
@@ -424,7 +424,7 @@ def greedyMixed(
     available_indices.difference_update(selected_indices)
 
     # Initial loss calculation
-    current_loss = lossFunction.calculate(dataset, z)
+    current_loss = lossFunction(dataset, z)
     total_loss = weight * np.sum(z) + current_loss
     error = abs(total_loss)
 
@@ -450,7 +450,7 @@ def greedyMixed(
 
         for index in available_indices:
             z[index] = 1  # try adding this element
-            new_loss = lossFunction.calculate(dataset, z)
+            new_loss = lossFunction(dataset, z)
             new_total_loss = weight * np.sum(z) + new_loss
 
             if new_total_loss < best_total_loss:
@@ -462,7 +462,7 @@ def greedyMixed(
         if best_index is not None:
             z[best_index] = 1
             available_indices.remove(best_index)
-            current_loss = lossFunction.calculate(dataset, z)
+            current_loss = lossFunction(dataset, z)
             total_loss = weight * np.sum(z) + current_loss
             error = abs(total_loss)  # update error
         else:
