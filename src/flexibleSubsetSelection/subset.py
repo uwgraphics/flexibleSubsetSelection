@@ -62,15 +62,6 @@ class Subset:
         log.info("Created %s.", self)
 
     @property
-    def array(self) -> np.ndarray:
-        """
-        Returns the subset of the dataset array.
-        """
-        if not hasattr(self, "_array"):
-            self._array = self.select(self.dataset.array, self.z, self.selectBy)
-        return self._array
-
-    @property
     def transforms(self) -> list[str]:
         """
         Expose available dataset transformations (mirrored from dataset).

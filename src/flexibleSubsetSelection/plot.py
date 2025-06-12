@@ -263,7 +263,7 @@ def scatter(
             colors.extend([color["green"]] * dataset.size[0])
         if subset is not None:
             if transform is None:
-                transformed = subset.array
+                transformed = subset.original
             else:
                 transformed = getattr(subset, transform)
             data.append(transformed)
@@ -277,7 +277,7 @@ def scatter(
     else:
         if dataset is not None:
             if transform is None:
-                transformed = dataset.array
+                transformed = dataset.original
             else:
                 transformed = getattr(dataset, transform)
             df = pd.DataFrame(transformed, columns=dataset.features)
@@ -292,7 +292,7 @@ def scatter(
             )
         if subset is not None:
             if transform is None:
-                transformed = subset.array
+                transformed = subset.original
             else:
                 transformed = getattr(subset, transform)
             df = pd.DataFrame(transformed, columns=subset.dataset.features)

@@ -14,9 +14,8 @@ from numpy.typing import ArrayLike
 import pandas as pd
 
 # Local files
-from . import generate
-from . import logger
-from . import transform
+from . import generate, logger
+from .transform import Transforms
 
 # Setup logger
 log = logger.setup(name=__name__)
@@ -65,7 +64,6 @@ class Dataset:
         self.name = name
         self.backend = backend
         self.interval = interval
-        self._transforms = [{"name": "original"}]
         self._metrics = []
 
         # Create Ibis connection with backend
@@ -86,7 +84,6 @@ class Dataset:
                         )
                     data = data[features]
                 self._table = self._conn.create_table(name, data)
-                self._array = data.to_numpy()
                 self._features = list(data.columns)
                 self._size = data.shape
             elif isinstance(data, np.ndarray):
@@ -94,7 +91,6 @@ class Dataset:
                 if features is not None:
                     df.columns = features
                 self._table = self._conn.create_table(name, df)
-                self._array = data
                 self._size = df.shape
             elif isinstance(data, (str, Path)):
                 if not Path(data).exists():
@@ -114,7 +110,8 @@ class Dataset:
                 raise ValueError("No size of data to generate specified.")
 
             df = pd.concat(
-                [generate.random(i, size, interval, seed) for i in randTypes], axis=1
+                [generate.random(i, size, interval, seed) for i in randTypes], 
+                axis=1
             )
 
             if features is not None:
@@ -123,10 +120,10 @@ class Dataset:
                 df.columns = features
 
             self._table = self._conn.create_table(name, df)
-            self._array = df.to_numpy()
             self._size = size
             self._features = list(df.columns)
 
+        self._transforms = Transforms(self._array)
         log.info("Dataset '%s' created with backend '%s'.", name, backend)
 
     @property
@@ -149,25 +146,11 @@ class Dataset:
             self._features = list(self._table.schema().names)
         return self._features
 
-    @property
-    def array(self) -> np.ndarray:
+    def _array(self) -> np.ndarray:
         """
-        Lazy materialization of the data array from the Ibis table when required
+        Materialization of the data array from the Ibis table
         """
-        if not hasattr(self, "_array") or self._array is None:
-            log.info("Materializing the dataset array.")
-            self._array = self._transform(self._table.to_pandas().to_numpy())
-        return self._array
-
-    @property
-    def transforms(self) -> list[str]:
-        """
-        Publicly expose the list of available transformation stages.
-
-        Returns:
-            A list of transform names.
-        """
-        return [t["name"] for t in self._transforms]
+        return self._table.to_pandas().to_numpy()
 
     @property
     def metrics(self) -> list[str]:
@@ -179,28 +162,31 @@ class Dataset:
         """
         return [t["name"] for t in self._metrics]
 
-    def compute(self, **metric: Any) -> None:
+    def compute(self, array: str = None, **metric: Any) -> None:
         """
         Compute and cache a named metric on the dataset.
 
         Args:
-            metric: Keyword arguments where each key is the name to assign the result,
-                and each value is either:
+            array: The array to compute the metric on
+            metric: Keyword arguments where each key is the name to assign the 
+            result, and each value is either:
                 - a function (applied to the dataset array), or
-                - a tuple of (function, parameter dict) for parameterized metrics.
+                - a tuple of (function, parameter dictionary).
 
         Raises:
             RuntimeError: If any metric function fails.
         """
+        if array is None:
+            array = self.original
         for name, function in metric.items():
             try:
                 if isinstance(function, tuple):  # with parameters
                     func, params = function
-                    setattr(self, name, func(self.array, **params))
+                    setattr(self, name, func(array, **params))
                 else:
                     func = function
                     params = {}
-                    setattr(self, name, function(self.array))
+                    setattr(self, name, function(array))
                 self._metrics.append(
                     {"name": name, "func": func, "params": params}
                 )
@@ -236,15 +222,8 @@ class Dataset:
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
 
-        self._transforms.append(
-            {
-                "name": "scaled",
-                "func": transform.scale,
-                "params": {"interval": interval, "indices": indices},
-            }
-        )
-        self._array = None
-        log.info("Queued scale for %s to interval %s.", features, interval)
+        self._transforms["scaled"] = (Transforms.scale, 
+                                     {"interval": interval, "indices": indices})
         return self
 
     def discretize(
@@ -275,13 +254,10 @@ class Dataset:
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
 
-        self._transforms.append({
-            "name": "discretized",
-            "func": transform.discretize,
-            "params": {"bins": bins, "indices": indices, "strategy": strategy}
-        })
-        self._array = None
-        log.info("Dataset discretized by %s with %s bins.", strategy, bins)
+        self._transforms["discretized"] = (Transforms.discretize,
+                                           {"bins": bins, 
+                                           "indices": indices, 
+                                           "strategy": strategy})
         return self
 
     def encode(self, 
@@ -309,15 +285,9 @@ class Dataset:
             log.exception(errorMessage)
             raise RuntimeWarning(errorMessage) from e
 
-        self._transforms.append(
-            {
-                "name": "encoded",
-                "func": transform.encode,
-                "params": {"indices": indices, "dimensions": dimensions},
-            }
-        )
-        self._array = None
-        log.info("Data one-hot encoded with %d dimensions.", dimensions)
+        self._transforms["encoded"] = (Transforms.encode, 
+                                       {"indices": indices, 
+                                       "dimensions": dimensions})
         return self
 
     def save(self, 
@@ -355,33 +325,34 @@ class Dataset:
         log.info("Data successfully saved at '%s'.", filePath)
 
     def __repr__(self) -> str:
-        transform_str = (
-            f", transforms=original→{'→'.join(self.transforms[1:])}"
-            if len(self.transforms) > 1 else ""
+        transformString = (
+            f", transforms=original→{'→'.join(self._transforms.queued[1:])}"
+            if len(self._transforms) > 1 else ""
         )
         return (
-            f"Dataset(name='{self.name}', size={self.size}, features={self.features}"
-            f"{transform_str})"
+            f"Dataset(name='{self.name}', size={self.size}, "
+            f"features={self.features} {transformString})"
         )
 
     def __str__(self) -> str:
-        transforms = self.transforms[1:]
+        transforms = self._transforms.queued[1:]
         if len(transforms) == 0:
-            transform_str = ""
+            transformString = ""
         elif len(transforms) == 1:
-            transform_str = f" {transforms[0]}"
+            transformString = f"{transforms[0]}"
         elif len(transforms) == 2:
-            transform_str = f" {transforms[0]} and {transforms[1]}"
+            transformString = f"{transforms[0]} and {transforms[1]}"
         else:
-            transform_str = f" {', '.join(transforms[:-1])} and {transforms[-1]}"
+            transformString = (f"{', '.join(transforms[:-1])} "
+                              f"and {transforms[-1]}")
         
-        feature_preview = (
+        featureString = (
             f"[{', '.join(map(str, self.features[:3]))}"
             f"{', ...' if len(self.features) > 3 else ''}]"
         )
         return (
-            f"Dataset {self.name}: {self.size[0]} rows x {self.size[1]} features "
-            f"{feature_preview}{transform_str}"
+            f"Dataset {self.name}: {self.size[0]} rows x "
+            f"{self.size[1]} features {featureString} {transformString}"
         )
 
     def __len__(self) -> int:
@@ -397,11 +368,10 @@ class Dataset:
         Args:
             attr: Specify the name of a transform function
         """
-        transforms = [t["name"] for t in self._transforms]
-        if attr in transforms:
-            array = self._table.to_pandas().to_numpy()
-            return self._transform(array, name=attr)
-        raise AttributeError(f"'Dataset' object has no attribute '{attr}'")
+        if attr in self._transforms.queued:
+            return self._transforms[attr]
+        else:
+            raise AttributeError(f"'Dataset' object has no attribute '{attr}'")
 
     def _connect(self, backend: str) -> None:
         """
@@ -424,27 +394,3 @@ class Dataset:
             self._conn = connectionFunction()
         except Exception as e:
             raise ValueError(f"Failed to connect to backend '{backend}': {e}")
-
-    def _transform(self, 
-        array: np.ndarray, 
-        name: str | None = None
-    ) -> np.ndarray:
-        """
-        Evaluate transformations up to and including the specified transform.
-
-        Args:
-            name: The name of the transform to evaluate to if specified. If
-                None, the full transformation pipeline is evaluated.
-        """
-        if name == "original" or len(self._transforms) == 1:
-            return array
-        for t in self._transforms[1:]:
-            try:
-                array = t["func"](array, **t["params"])
-            except Exception as e:
-                errorMessage = "Transform '%s' failed." % t["name"]
-                log.exception(errorMessage)
-                raise RuntimeError(errorMessage) from e
-            if name and t["name"] == name:
-                break
-        return array

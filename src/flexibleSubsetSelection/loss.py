@@ -80,7 +80,7 @@ class MultiCriterion:
         zipped = zip(self.objectives, self.parameters, self.weights)
         for objective, params, weight in zipped:
             # retrieve solve array from attributes or default to array
-            array = getattr(dataset, params.get("solveArray", "array"))
+            array = getattr(dataset, params.get("solveArray", "original"))
 
             # retrieve selectBy from attributes or default to row
             selectBy = params.get("selectBy", "row")
@@ -130,7 +130,7 @@ class UniCriterion:
     def __init__(
         self,
         objective: Callable,
-        solveArray: str = "array",
+        solveArray: str = "original",
         selectBy: str = "row",
         **parameters: Any,
     ) -> None:
