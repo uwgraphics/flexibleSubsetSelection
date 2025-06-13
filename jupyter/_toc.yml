@@ -5,7 +5,7 @@ format: jb-book
 root: Fig1-designProcess
 chapters:
 - file: Fig2&3-objectives
-# - file: Fig4-performance
+- file: Fig4-performance
 # - file: Fig5-scatterplotOverdraw
 # - file: Fig6-clusterRepresentatives
 # - file: Fig7-discreteCoverage
