@@ -30,3 +30,13 @@ dev = [
     "jupyter-book",
     "pot"
 ]
+docs = [
+    "sphinx-copybutton",
+    "sphinx-book-theme",
+    "myst-parser",
+    "sphinx-autoapi",
+    "sphinx-togglebutton",
+    "sphinx-design",
+    "sphinx-autodoc-typehints",
+    "myst-nb"
+]
