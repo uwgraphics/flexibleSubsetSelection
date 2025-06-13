@@ -1,12 +1,10 @@
 name: deploy-book
 
-# Run this when the master or main branch changes
 on:
   push:
     branches:
     - main
 
-# This job installs dependencies, builds the book, and pushes it to `gh-pages`
 jobs:
   deploy-book:
     runs-on: ubuntu-latest
@@ -17,40 +15,30 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # Install dependencies
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v4
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.12
+        python-version: 3.13
 
-    - name: Install dependencies
-      run: |
-        pip install .
-        pip install -r requirements.txt
+    - name: Install project and dependencies
+      run: pip install -e .[dev]
 
-    # (optional) Cache your executed notebooks between runs
-    # if you have config:
-    # execute:
-    #   execute_notebooks: cache
-    - name: cache executed notebooks
+    - name: Cache executed notebooks
       uses: actions/cache@v4
       with:
         path: _build/.jupyter_cache
-        key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
+        key: jupyter-book-cache-${{ hashFiles('pyproject.toml') }}
 
-    # Build the book
     - name: Build the book
       run: |
         cd jupyter
         jupyter-book build .
 
-    # Upload the book's HTML as an artifact
-    - name: Upload artifact
+    - name: Upload the book as an artifact
       uses: actions/upload-pages-artifact@v3
       with:
         path: "jupyter/_build/html"
 
-    # Deploy the book's HTML to GitHub Pages
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
