@@ -4,8 +4,7 @@ Documentation and examples for the Flexible Subset Selection package
 
 ```{toctree}
 :maxdepth: 2
-:caption: Examples
+:caption: Contents
 
-api/index
 examples/index
 ```
