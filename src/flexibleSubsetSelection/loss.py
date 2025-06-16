@@ -112,8 +112,7 @@ class MultiCriterion:
             parameters = ", ".join(parameters)
 
             if len(parameters) > 0:
-                objectives.append((f"{weight}*({objective.__name__}, " 
-                                  "{parameters})"))
+                objectives.append((f"{weight}*({objective.__name__}, {{parameters}})"))
             else:
                 objectives.append(f"{weight}*({objective.__name__})")
 

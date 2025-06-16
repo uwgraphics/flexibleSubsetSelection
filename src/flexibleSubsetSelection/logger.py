@@ -9,10 +9,11 @@ import sys
 # --- Logger -------------------------------------------------------------------
 
 
-def setup(name: str = "flexibleSubsetSelection", 
+def setup(
+    name: str = "flexibleSubsetSelection",
     level: int = logging.NOTSET,
     fileName: str | Path | None = None,
-    formatter: logging.Formatter | None = None
+    formatter: logging.Formatter | None = None,
 ) -> logging.Logger:
     """
     Sets up logging for the package.
@@ -34,7 +35,7 @@ def setup(name: str = "flexibleSubsetSelection",
         formatter = formatter or logging.Formatter(formatString)
         handler.setFormatter(formatter)
         log.addHandler(handler)
-    
+
         if fileName:
             fileName = Path(fileName)
             fileHandler = logging.FileHandler(fileName)
@@ -44,8 +45,6 @@ def setup(name: str = "flexibleSubsetSelection",
 
     log.setLevel(level)
     log.propagate = False
-    log.debug("Logger %s initialized with level %s.", 
-              name, 
-              logging.getLevelName(level))
-              
+    log.debug("Logger %s initialized with level %s.", name, logging.getLevelName(level))
+
     return log

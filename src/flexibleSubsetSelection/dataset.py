@@ -96,7 +96,7 @@ class Dataset:
                 if not Path(data).exists():
                     raise ValueError(f"File '{data}' does not exist.")
                 try:
-                    self._table = self._conn.read_uri(data)
+                    self._table = self._conn.read_csv(data)
                 except Exception as e:
                     raise ValueError(f"Failed to read '{data}': {e}.")
 
@@ -110,8 +110,7 @@ class Dataset:
                 raise ValueError("No size of data to generate specified.")
 
             df = pd.concat(
-                [generate.random(i, size, interval, seed) for i in randTypes], 
-                axis=1
+                [generate.random(i, size, interval, seed) for i in randTypes], axis=1
             )
 
             if features is not None:
@@ -127,14 +126,42 @@ class Dataset:
         log.info("Dataset '%s' created with backend '%s'.", name, backend)
 
     @property
+    def rows(self) -> int:
+        """
+        Lazy evaluation of the number of rows of the dataset when required
+        """
+        if hasattr(self, "_rows"):
+            return self._rows
+        try:
+            self._rows = self._conn.execute(self._table.count())
+            return self._rows
+        except Exception as e:
+            errorMessage = "Error evaluating the number of rows."
+            log.exception(errorMessage)
+            raise RuntimeError(errorMessage) from e
+
+    @property
+    def cols(self) -> int:
+        """
+        Lazy evaluation of the number of columns of the dataset when required
+        """
+        if hasattr(self, "_cols"):
+            return self._cols
+        try:
+            self._cols = len(self._table.schema().names)
+            return self._cols
+        except Exception as e:
+            errorMessage = "Error evaluating the number of columns."
+            log.exception(errorMessage)
+            raise RuntimeError(errorMessage) from e
+
+    @property
     def size(self) -> tuple[int, int]:
         """
         Lazy evaluation of the size of the dataset when required
         """
         if not hasattr(self, "_size"):
-            rows = self._conn.execute(self._table.count()).scalar()
-            cols = len(self._table.schema().names)
-            self._size = (rows, cols)
+            self._size = (self.rows, self.cols)
         return self._size
 
     @property
@@ -142,9 +169,15 @@ class Dataset:
         """
         Lazy evaluation of feature columns in dataset when required
         """
-        if not hasattr(self, "_features"):
+        if hasattr(self, "_features"):
+            return self._features
+        try:
             self._features = list(self._table.schema().names)
-        return self._features
+            return self._features
+        except Exception as e:
+            errorMessage = "Error evaluating the features in the dataset."
+            log.exception(errorMessage)
+            raise RuntimeError(errorMessage) from e
 
     def _array(self) -> np.ndarray:
         """
@@ -162,13 +195,16 @@ class Dataset:
         """
         return [t["name"] for t in self._metrics]
 
-    def compute(self, array: str = None, **metric: Any) -> None:
+    def compute(
+        self, array: str = None, features: list[str] | None = None, **metric: Any
+    ) -> None:
         """
         Compute and cache a named metric on the dataset.
 
         Args:
             array: The array to compute the metric on
-            metric: Keyword arguments where each key is the name to assign the 
+            features: The features to compute the metric on
+            metric: Keyword arguments where each key is the name to assign the
             result, and each value is either:
                 - a function (applied to the dataset array), or
                 - a tuple of (function, parameter dictionary).
@@ -176,8 +212,16 @@ class Dataset:
         Raises:
             RuntimeError: If any metric function fails.
         """
-        if array is None:
-            array = self.original
+        array = getattr(self, array) if array else self.original
+
+        if features is not None:
+            try:
+                indices = [self.features.index(f) for f in features]
+                array = array[:, indices]
+            except ValueError as e:
+                errorMessage = "Feature not found in 'compute()'."
+                log.exception(errorMessage)
+                raise RuntimeError(errorMessage) from e
         for name, function in metric.items():
             try:
                 if isinstance(function, tuple):  # with parameters
@@ -187,18 +231,17 @@ class Dataset:
                     func = function
                     params = {}
                     setattr(self, name, function(array))
-                self._metrics.append(
-                    {"name": name, "func": func, "params": params}
-                )
+                self._metrics.append({"name": name, "func": func, "params": params})
                 log.info("Data preprocessed with function '%s'.", name)
             except Exception as e:
                 errorMessage = "Error applying function '%s'." % name
                 log.exception(errorMessage)
                 raise RuntimeError(errorMessage) from e
 
-    def scale(self, 
-        interval: tuple[float, float] | None = None, 
-        features: list[str] | None = None
+    def scale(
+        self,
+        interval: tuple[float, float] | None = None,
+        features: list[str] | None = None,
     ) -> Self:
         """
         Scale dataset features to a specified interval.
@@ -218,12 +261,14 @@ class Dataset:
         try:
             indices = [self.features.index(f) for f in features]
         except ValueError as e:
-            errorMessage = "Feature not found in scale."
+            errorMessage = "Feature not found in 'scale()'."
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
 
-        self._transforms["scaled"] = (Transforms.scale, 
-                                     {"interval": interval, "indices": indices})
+        self._transforms["scaled"] = (
+            Transforms.scale,
+            {"interval": interval, "indices": indices},
+        )
         return self
 
     def discretize(
@@ -250,20 +295,17 @@ class Dataset:
         try:
             indices = [self.features.index(f) for f in features]
         except ValueError as e:
-            errorMessage = "Feature not found in discretize."
+            errorMessage = "Feature not found in 'discretize()'."
             log.exception(errorMessage)
             raise RuntimeError(errorMessage) from e
 
-        self._transforms["discretized"] = (Transforms.discretize,
-                                           {"bins": bins, 
-                                           "indices": indices, 
-                                           "strategy": strategy})
+        self._transforms["discretized"] = (
+            Transforms.discretize,
+            {"bins": bins, "indices": indices, "strategy": strategy},
+        )
         return self
 
-    def encode(self, 
-        features: list[str] | None = None, 
-        dimensions: int = 1
-    ) -> Self:
+    def encode(self, features: list[str] | None = None, dimensions: int = 1) -> Self:
         """
         Modifies the specified features of the dataset by one hot encoding them,
         assuming they are discrete.
@@ -281,18 +323,20 @@ class Dataset:
         try:
             indices = [self.features.index(f) for f in features]
         except ValueError as e:
-            errorMessage = "Feature not found in encode."
+            errorMessage = "Feature not found in 'encode()'."
             log.exception(errorMessage)
             raise RuntimeWarning(errorMessage) from e
 
-        self._transforms["encoded"] = (Transforms.encode, 
-                                       {"indices": indices, 
-                                       "dimensions": dimensions})
+        self._transforms["encoded"] = (
+            Transforms.encode,
+            {"indices": indices, "dimensions": dimensions},
+        )
         return self
 
-    def save(self, 
-        fileType: Literal["csv", "parquet"] = "csv", 
-        directory: str | Path | None = None
+    def save(
+        self,
+        fileType: Literal["csv", "parquet"] = "csv",
+        directory: str | Path | None = None,
     ) -> None:
         """
         Saves the dataset eagerly to disk.
@@ -327,7 +371,8 @@ class Dataset:
     def __repr__(self) -> str:
         transformString = (
             f", transforms=original→{'→'.join(self._transforms.queued[1:])}"
-            if len(self._transforms) > 1 else ""
+            if len(self._transforms) > 1
+            else ""
         )
         return (
             f"Dataset(name='{self.name}', size={self.size}, "
@@ -343,9 +388,8 @@ class Dataset:
         elif len(transforms) == 2:
             transformString = f"{transforms[0]} and {transforms[1]}"
         else:
-            transformString = (f"{', '.join(transforms[:-1])} "
-                              f"and {transforms[-1]}")
-        
+            transformString = f"{', '.join(transforms[:-1])} and {transforms[-1]}"
+
         featureString = (
             f"[{', '.join(map(str, self.features[:3]))}"
             f"{', ...' if len(self.features) > 3 else ''}]"

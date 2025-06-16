@@ -24,7 +24,8 @@ class Subset:
     A class for creating, storing, and handling subsets of datasets.
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         dataset: Dataset,
         z: np.ndarray,
         name: str = None,

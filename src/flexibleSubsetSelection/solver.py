@@ -42,11 +42,12 @@ class Solver:
             loss: The loss function class object.
             savePath: The path to the solver save file.
         """
-        log.debug(("Initializing Solver with algorithm: %s, "
-                "lossFunction: %s, savePath: %s"),
-                algorithm.__name__,
-                lossFunction,
-                savePath)
+        log.debug(
+            ("Initializing Solver with algorithm: %s, lossFunction: %s, savePath: %s"),
+            algorithm.__name__,
+            lossFunction,
+            savePath,
+        )
 
         self.algorithm = algorithm
         self.lossFunction = lossFunction
@@ -56,13 +57,17 @@ class Solver:
         try:
             with open(self.savePath, "x", newline="") as fp:
                 writer = csv.writer(fp)
-                writer.writerow(["Loss Function",
-                                 "Algorithm",
-                                 "Dataset Length",
-                                 "Dataset Width",
-                                 "Subset Length",
-                                 "Computation Time",
-                                 "Loss"])
+                writer.writerow(
+                    [
+                        "Loss Function",
+                        "Algorithm",
+                        "Dataset Length",
+                        "Dataset Width",
+                        "Subset Length",
+                        "Computation Time",
+                        "Loss",
+                    ]
+                )
         except FileExistsError:
             log.debug("Log file already exists at %s", self.savePath)
 
@@ -87,21 +92,22 @@ class Solver:
         with Timer() as timer:
             z, loss = self.algorithm(dataset, self.lossFunction, **parameters)
 
-        # Log information on completion of the solve 
-        log.info(("Selected subset from dataset '%s' with '%s' and '%s' "
-                 "in %ss with %s loss."),
-                 dataset.name,
-                 self.algorithm.__name__,
-                 self.lossFunction,
-                 np.round(timer.elapsedTime, 2),
-                 loss)
+        # Log information on completion of the solve
+        log.info(
+            (
+                "Selected subset from dataset '%s' with '%s' and '%s' "
+                "in %ss with %s loss."
+            ),
+            dataset.name,
+            self.algorithm.__name__,
+            self.lossFunction,
+            np.round(timer.elapsedTime, 2),
+            loss,
+        )
 
         # Create Subset instance to store the selected subset
-        subset = Subset(dataset=dataset, 
-                        z=z, 
-                        solveTime=timer.elapsedTime, 
-                        loss=loss)
-        
+        subset = Subset(dataset=dataset, z=z, solveTime=timer.elapsedTime, loss=loss)
+
         # Save the performance data to file
         try:
             self.save(
@@ -147,12 +153,16 @@ class Solver:
         """
         Return a detailed string representation of the Solver object.
         """
-        return (f"Solver(algorithm={self.algorithm.__name__}, "
-                f"loss={self.lossFunction}, savePath='{self.savePath}')")
+        return (
+            f"Solver(algorithm={self.algorithm.__name__}, "
+            f"loss={self.lossFunction}, savePath='{self.savePath}')"
+        )
 
     def __str__(self) -> str:
         """
         Return a user-friendly string representation of the Solver object.
         """
-        return (f"Solves algorithm {self.algorithm.__name__}, "
-                f" with {self.lossFunction} loss.")
+        return (
+            f"Solves algorithm {self.algorithm.__name__}, "
+            f" with {self.lossFunction} loss."
+        )

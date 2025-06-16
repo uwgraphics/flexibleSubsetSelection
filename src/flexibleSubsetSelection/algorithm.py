@@ -289,7 +289,9 @@ def greedyMinSubset(
     z = np.zeros(datasetLength, dtype=int)
 
     # Randomly select initial points
-    selected_indices = np.random.choice(datasetLength, initialSize, replace=False)
+    selected_indices = np.random.choice(
+        datasetLength, initialSize, replace=False, seed=rng
+    )
     z[selected_indices] = 1
 
     # Set of available indices
@@ -418,7 +420,9 @@ def greedyMixed(
     z = np.zeros(datasetLength, dtype=int)
 
     # Randomly select initial points
-    selected_indices = np.random.choice(datasetLength, initialSize, replace=False)
+    selected_indices = np.random.choice(
+        datasetLength, initialSize, replace=False, seed=rng
+    )
     z[selected_indices] = 1
 
     # Set of available indices

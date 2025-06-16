@@ -53,9 +53,8 @@ def random(
         raise ValueError(f"unknown random generation method: {randType}")
 
 
-def uniform(size: tuple, 
-    interval: tuple, 
-    seed: int | np.random.Generator | None = None
+def uniform(
+    size: tuple, interval: tuple, seed: int | np.random.Generator | None = None
 ) -> pd.DataFrame:
     """
     Generate random data from a uniform distribution using numpy.
@@ -72,9 +71,7 @@ def uniform(size: tuple,
     return pd.DataFrame(data)
 
 
-def binary(size: tuple, 
-    seed: int | np.random.Generator | None = None
-) -> pd.DataFrame:
+def binary(size: tuple, seed: int | np.random.Generator | None = None) -> pd.DataFrame:
     """
     Generate random binary data points of bernoulli trials using numpy where
     each feature has a random probability p.
@@ -91,8 +88,8 @@ def binary(size: tuple,
     return pd.DataFrame(data)
 
 
-def categories(size: tuple, 
-    interval: tuple, seed: int | np.random.Generator | None = None
+def categories(
+    size: tuple, interval: tuple, seed: int | np.random.Generator | None = None
 ) -> pd.DataFrame:
     """
     Generate random categorical data points using numpy with a random number of
@@ -114,9 +111,8 @@ def categories(size: tuple,
     return pd.DataFrame(data)
 
 
-def normal(size: tuple, 
-    interval: tuple, 
-    seed: int | np.random.Generator | None = None
+def normal(
+    size: tuple, interval: tuple, seed: int | np.random.Generator | None = None
 ) -> pd.DataFrame:
     """
     Generate random data from a normal distribution using numpy centered on
@@ -137,7 +133,8 @@ def normal(size: tuple,
     return pd.DataFrame(data)
 
 
-def multimodal(size: tuple,
+def multimodal(
+    size: tuple,
     interval: tuple,
     sigmaInterval: tuple = (0.1, 3),
     seed: int | np.random.Generator | None = None,
@@ -177,7 +174,8 @@ def multimodal(size: tuple,
     return pd.DataFrame(data)
 
 
-def skew(size: tuple,
+def skew(
+    size: tuple,
     interval: tuple = (-5, 5),
     seed: int | np.random.Generator | None = None,
 ) -> pd.DataFrame:
@@ -202,7 +200,8 @@ def skew(size: tuple,
     return pd.DataFrame(data.T)
 
 
-def blobs(size: tuple,
+def blobs(
+    size: tuple,
     interval: tuple,
     numClusters: int = 6,
     sigmaInterval: tuple = (0.1, 3),

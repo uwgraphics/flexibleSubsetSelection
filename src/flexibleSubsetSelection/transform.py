@@ -1,7 +1,7 @@
 # --- Imports and Setup --------------------------------------------------------
 
 # Standard library
-from typing import Literal, Dict, Callable
+from typing import Literal, Callable
 
 # Third party
 import numpy as np
@@ -34,14 +34,12 @@ class Transforms:
         self._pipeline = {"original": {"func": None, "params": {}}}
         self._cache = {}
 
-
     @property
     def cached(self) -> list:
         """
         Return the names of the cached transforms.
         """
         return list(self._cache.keys())
-
 
     @property
     def queued(self) -> list:
@@ -50,11 +48,9 @@ class Transforms:
         """
         return list(self._pipeline.keys())
 
-
     @staticmethod
-    def scale(data: np.ndarray, 
-        interval: tuple[float, float], 
-        indices: list[int]
+    def scale(
+        data: np.ndarray, interval: tuple[float, float], indices: list[int]
     ) -> np.ndarray:
         """
         Returns data at indices scaled to the specified interval.
@@ -73,7 +69,6 @@ class Transforms:
         result = data.copy()
         result[:, indices] = scaled
         return result
-
 
     @staticmethod
     def discretize(
@@ -94,12 +89,8 @@ class Transforms:
         discretizer = KBinsDiscretizer(n_bins=bins, encode="ordinal", strategy=strategy)
         return discretizer.fit_transform(selected)
 
-
     @staticmethod
-    def encode(data: np.ndarray, 
-        indices: list[int], 
-        dimensions: int = 1
-    ) -> np.ndarray:
+    def encode(data: np.ndarray, indices: list[int], dimensions: int = 1) -> np.ndarray:
         """
         Returns one hot encoding of discrete data at specified indices.
 
@@ -120,7 +111,6 @@ class Transforms:
         mask[indices] = False
         return np.hstack((data[:, mask], encoded))
 
-
     def __setitem__(self, key: str, value: tuple) -> None:
         """
         Add a transform to the pipeline by specifying name, func, and params.
@@ -135,7 +125,6 @@ class Transforms:
         func, params = value
         self._pipeline[key] = {"func": func, "params": params}
         log.info("Queued '%s' with parameters '%s'.", key, params)
-
 
     def __getitem__(self, name: str) -> np.ndarray:
         """
@@ -161,21 +150,20 @@ class Transforms:
                 break
         if index == -1:
             array = self._array()
-            self._cache['original'] = array
+            self._cache["original"] = array
             index = 0
 
         for i in range(index + 1, targetIndex + 1):
             currentName = names[i]
             transform = self._pipeline[currentName]
-            array = transform['func'](array, **transform['params'])
+            array = transform["func"](array, **transform["params"])
 
-        self._cache[name] = array       
+        self._cache[name] = array
         return array
-        
+
     def __len__(self):
         """Returns the number of steps in the pipeline."""
         return len(self._pipeline)
-
 
     def __iter__(self):
         """Iterates over the names of the transforms in order."""
