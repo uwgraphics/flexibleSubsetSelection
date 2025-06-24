@@ -110,7 +110,8 @@ class Dataset:
                 raise ValueError("No size of data to generate specified.")
 
             df = pd.concat(
-                [generate.random(i, size, interval, seed) for i in randTypes], axis=1
+                [generate.random(i, size, interval, seed) for i in randTypes], 
+                axis=1
             )
 
             if features is not None:
@@ -196,7 +197,10 @@ class Dataset:
         return [t["name"] for t in self._metrics]
 
     def compute(
-        self, array: str = None, features: list[str] | None = None, **metric: Any
+        self, 
+        array: str | None = None, 
+        features: list[str] | None = None, 
+        **metric: Any
     ) -> None:
         """
         Compute and cache a named metric on the dataset.
@@ -212,7 +216,8 @@ class Dataset:
         Raises:
             RuntimeError: If any metric function fails.
         """
-        array = getattr(self, array) if array else self.original
+        if array is None:
+            array = self.original
 
         if features is not None:
             try:
@@ -231,7 +236,9 @@ class Dataset:
                     func = function
                     params = {}
                     setattr(self, name, function(array))
-                self._metrics.append({"name": name, "func": func, "params": params})
+                self._metrics.append({"name": name, 
+                                      "func": func, 
+                                      "params": params})
                 log.info("Data preprocessed with function '%s'.", name)
             except Exception as e:
                 errorMessage = "Error applying function '%s'." % name
@@ -305,7 +312,11 @@ class Dataset:
         )
         return self
 
-    def encode(self, features: list[str] | None = None, dimensions: int = 1) -> Self:
+    def encode(
+        self, 
+        features: list[str] | None = None, 
+        dimensions: int = 1
+    ) -> Self:
         """
         Modifies the specified features of the dataset by one hot encoding them,
         assuming they are discrete.

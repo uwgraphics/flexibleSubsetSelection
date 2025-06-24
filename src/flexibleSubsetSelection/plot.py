@@ -471,7 +471,11 @@ class RealTimePlotter:
 
         # Plot the updated loss values
         self.ax.plot(
-            self.iterations, self.losses, c=self.color["orange"], label="Loss", lw=2
+            self.iterations, 
+            self.losses, 
+            c=self.color["orange"], 
+            label="Loss", 
+            lw=2
         )
         if subsetSize is not None:
             self.ax.plot(
@@ -479,7 +483,7 @@ class RealTimePlotter:
                 self.subsetSizes,
                 c=self.color["green"],
                 label="Subset Size",
-                lw=2,
+                lw=2
             )
         self.ax.legend()
 

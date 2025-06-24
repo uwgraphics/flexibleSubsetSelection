@@ -132,7 +132,10 @@ class Subset:
                 with open(filePath, "wb") as f:
                     pickle.dump(self, f)
             elif fileType == "csv":
-                pd.DataFrame(self.z).to_csv(filePath, index=False)
+                pd.DataFrame(
+                    data = self.original, 
+                    columns = self.dataset.features
+                ).to_csv(filePath, index=False)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}")
             log.info(f"Subset saved to '{filePath}'.")
