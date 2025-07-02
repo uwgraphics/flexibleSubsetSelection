@@ -418,7 +418,7 @@ class Dataset:
 
     def __getattr__(self, attr: str) -> np.ndarray:
         """
-        Returns the specified transformed version of the dataset if specified.
+        Returns the specified transformed version of the dataset.
 
         Args:
             attr: Specify the name of a transform function

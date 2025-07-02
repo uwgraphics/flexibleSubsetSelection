@@ -86,8 +86,12 @@ class Transforms:
             strategy: sklearn KBinsDiscretizer strategy to use.
         """
         selected = data[:, indices]
-        discretizer = KBinsDiscretizer(n_bins=bins, encode="ordinal", strategy=strategy)
-        return discretizer.fit_transform(selected)
+        discretizer = KBinsDiscretizer(
+            n_bins = bins, 
+            encode = "ordinal", 
+            strategy = strategy
+        )
+        return discretizer.fit_transform(selected).astype(int)
 
     @staticmethod
     def encode(

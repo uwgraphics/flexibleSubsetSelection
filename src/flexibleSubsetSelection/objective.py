@@ -18,7 +18,10 @@ from sklearn.neighbors import LocalOutlierFactor
 
 
 def preserveMetric(
-    subset: np.ndarray, metric: Callable, datasetMetric: ArrayLike, p: int | str = 1
+    subset: np.ndarray, 
+    metric: Callable, 
+    datasetMetric: ArrayLike, 
+    p: int | str = 1
 ) -> float:
     """
     An objective function for preserving a metric between a dataset and a subset
@@ -69,11 +72,6 @@ def outlierness(subset: np.ndarray, neighbors: int = 20) -> float:
     lof = LocalOutlierFactor(n_neighbors=neighbors)
     lof.fit(subset)
     return lof.negative_outlier_factor_
-
-
-def discreteDistribution(array: np.ndarray) -> float:
-    return 0
-
 
 def discreteCoverage(array: np.ndarray) -> float:
     """
