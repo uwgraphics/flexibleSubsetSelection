@@ -90,7 +90,11 @@ class Transforms:
         return discretizer.fit_transform(selected)
 
     @staticmethod
-    def encode(data: np.ndarray, indices: list[int], dimensions: int = 1) -> np.ndarray:
+    def encode(
+        data: np.ndarray, 
+        indices: list[int], 
+        dimensions: int = 1
+    ) -> np.ndarray:
         """
         Returns one hot encoding of discrete data at specified indices.
 

@@ -494,3 +494,19 @@ class RealTimePlotter:
     def close(self):
         # Close the plot when done
         plt.close(self.fig)
+
+    def reset(self):
+        """
+        Reset the plot data and figure for reuse.
+        """
+        self.iterations.clear()
+        self.losses.clear()
+        self.subsetSizes.clear()
+
+        # Clear the axis and reinitialize
+        self.ax.clear()
+        self.ax.set_xlabel("Iteration")
+        self.ax.set_ylabel("Loss")
+        self.ax.set_title("Real-Time Loss During Solver")
+        self.ax.set_ylim(bottom=0)
+        display(self.fig)

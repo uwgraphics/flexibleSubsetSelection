@@ -954,3 +954,4 @@ Uni-criterion: clusterCenters,greedySwap,1000,2,10,0.14174033398739994,1.1295780
 "Uni-criterion: clusterCenters, original",worstOfRandom,1000,2,10,0.020364833002531668,12.012732822414002
 "Uni-criterion: clusterCenters, original",bestOfRandom,1000,2,10,0.020610791998478817,2.449773988087381
 "Uni-criterion: clusterCenters, original",greedySwap,1000,2,10,0.15180291700016824,0.382583429472887
+"Multi-criterion: 100*(earthMoversDistance) + 1*(distinctness, {parameters})",greedySwap,200,2,80,19.924220166984014,-26.421780624469562
