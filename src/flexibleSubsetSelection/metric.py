@@ -1,14 +1,61 @@
 # --- Imports ------------------------------------------------------------------
 
+# Standard library
+from typing import Any, Callable
+
 # Third party
 import numpy as np
 import pandas as pd
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
 
+# Local files
+from .dataset import Dataset
+from . import logger
+
+# Setup logger
+log = logger.setup(name=__name__)
 
 # --- Metric Functions ---------------------------------------------------------
 
+class Metric:
+    """
+    A class for queuing, computing, and caching metrics of datasets.
+    """
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        name: str,
+        function: Callable,
+        array: str,
+        params: dict[str, Any] | None = None,
+        indices: list[int]| None = None
+    ):
+        """
+        Initialize a metric with a metric function and additional parameters
+        """
+        self.function = function
+        self.name = name
+        self.params = params
+        self.array = array
+        self._indices = indices
+        self._dataset = dataset 
+        self._value = None
+
+        log.info("Queued metric '%s' on '%s'.", self.name, self.array)
+
+    def __call__(self):
+        if self._value is None:
+            array = getattr(self._dataset, self.array)
+            if self._indices is not None:
+                array = array[:, self._indices]
+            if self.params is None:
+                self._value = self.function(array)
+            else:
+                self._value = self.function(array, **self.params)
+            log.info("Evaluated metric '%s' on '%s'.", self.name, self.array)
+        return self._value
 
 def max(array: np.ndarray) -> np.ndarray:
     """Returns the maximum of each feature of array"""

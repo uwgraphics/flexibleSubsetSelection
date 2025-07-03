@@ -17,10 +17,9 @@ log = logger.setup(name=__name__)
 
 # --- Data Transform Pipeline --------------------------------------------------
 
-
 class Transforms:
     """
-    A class for creating, storing, and evaluating data transforms on a Dataset.
+    A class for creating, storing, and evaluating data transforms of datasets.
     """
 
     def __init__(self, array: Callable):
@@ -141,9 +140,9 @@ class Transforms:
         Args:
             name: The name of the transform to get
         """
-        if name in self._cache:
+        if name in self._cache: # directly return cached transforms
             return self._cache[name]
-        if name not in self._pipeline:
+        if name not in self._pipeline: # transform is not cached or queued
             raise KeyError(f"No transform named '{name}' in the pipeline.")
 
         names = list(self._pipeline.keys())

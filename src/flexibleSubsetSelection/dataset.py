@@ -16,6 +16,7 @@ import pandas as pd
 # Local files
 from . import generate, logger
 from .transform import Transforms
+from .metric import Metric
 
 # Setup logger
 log = logger.setup(name=__name__)
@@ -64,7 +65,7 @@ class Dataset:
         self.name = name
         self.backend = backend
         self.interval = interval
-        self._metrics = []
+        self._metrics = {}
 
         # Create Ibis connection with backend
         if isinstance(data, Table):  # Data specified as an Ibis table
@@ -194,56 +195,48 @@ class Dataset:
         Returns:
             A list of metric names.
         """
-        return [t["name"] for t in self._metrics]
+        return list(self._metrics)
 
     def compute(
         self, 
         array: str | None = None, 
         features: list[str] | None = None, 
+        params: Any = None,
         **metric: Any
     ) -> None:
         """
-        Compute and cache a named metric on the dataset.
+        Queue a named metric function on the dataset.
 
         Args:
             array: The array to compute the metric on
             features: The features to compute the metric on
-            metric: Keyword arguments where each key is the name to assign the
-            result, and each value is either:
-                - a function (applied to the dataset array), or
-                - a tuple of (function, parameter dictionary).
+            metric: Keyword argument where each key is the name to assign the
+            result, and each value is a function (applied to the dataset array)
+            params: parameter dictionary of the function if required
 
         Raises:
             RuntimeError: If any metric function fails.
         """
         if array is None:
-            array = self.original
+            array = "original"
 
         if features is not None:
             try:
                 indices = [self.features.index(f) for f in features]
-                array = array[:, indices]
             except ValueError as e:
                 errorMessage = "Feature not found in 'compute()'."
                 log.exception(errorMessage)
                 raise RuntimeError(errorMessage) from e
         for name, function in metric.items():
-            try:
-                if isinstance(function, tuple):  # with parameters
-                    func, params = function
-                    setattr(self, name, func(array, **params))
-                else:
-                    func = function
-                    params = {}
-                    setattr(self, name, function(array))
-                self._metrics.append({"name": name, 
-                                      "func": func, 
-                                      "params": params})
-                log.info("Data preprocessed with function '%s'.", name)
-            except Exception as e:
-                errorMessage = "Error applying function '%s'." % name
-                log.exception(errorMessage)
-                raise RuntimeError(errorMessage) from e
+            self._metrics[name] = Metric(
+                dataset = self, 
+                name = name, 
+                function = function, 
+                array = array, 
+                params = params, 
+                indices = indices
+            )
+
 
     def scale(
         self,
