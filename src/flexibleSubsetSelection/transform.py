@@ -131,7 +131,7 @@ class Transforms:
 
         func, params = value
         self._pipeline[key] = {"func": func, "params": params}
-        log.info("Queued '%s' with parameters '%s'.", key, params)
+        log.info("Queued '%s' transform with parameters '%s'.", key, params)
 
     def __getitem__(self, name: str) -> np.ndarray:
         """

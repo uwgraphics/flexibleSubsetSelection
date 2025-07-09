@@ -131,7 +131,7 @@ class Subset:
                 ).to_csv(filePath, index=False)
             else:
                 raise ValueError(f"Unsupported file type: {fileType}")
-            log.info(f"Subset saved to '{filePath}'.")
+            log.info("Saved %s to '%s'.", self, filePath)
         except Exception as e:
             errorMessage = "Error saving subset to '%s'" % filePath
             log.exception(errorMessage)
@@ -139,7 +139,7 @@ class Subset:
 
     def __repr__(self) -> str:
         """
-        Return a detailed string representation of the Subset object.
+        A detailed string representation of the Subset object.
         """
         parts = [f"Subset(name={self.name}, size={self.size})"]
         if self.solveTime is not None:
@@ -150,14 +150,14 @@ class Subset:
 
     def __str__(self) -> str:
         """
-        Return a user-friendly string representation of the Subset object.
+        A user-friendly string representation of the Subset object.
         """
         if len(self.size) == 1:
             size = str(self.size[0])
         else:
-            size = f"{self.size[0]}x{self.size[1]}"
+            size = f"{self.size[0]}×{self.size[1]}"
 
-        string = f"Subset of {self.name} of size {size}"
+        string = f"'{self.name}' subset of size {size}"
         if self.solveTime is not None:
             string += f" in {round(self.solveTime, 2)}s "
         if self.loss is not None:

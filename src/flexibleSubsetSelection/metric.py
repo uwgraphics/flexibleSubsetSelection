@@ -42,7 +42,7 @@ class Metric:
         self._dataset = dataset 
         self._value = None
 
-        log.info("Queued metric '%s' on '%s'.", self.name, self.array)
+        log.info("Queued '%s' metric on '%s' array.", self.name, self.array)
 
     def __call__(self):
         if self._value is None:
@@ -60,7 +60,12 @@ class Metric:
                 self._value = self.function(array)
             else:
                 self._value = self.function(array, **self.params)
-            log.info("Evaluated metric '%s' on '%s'.", self.name, self.array)
+                
+            log.info(
+                "Evaluated '%s' metric on '%s' array.", 
+                self.name, 
+                self.array
+            )
         return self._value
 
 def max(array: np.ndarray) -> np.ndarray:

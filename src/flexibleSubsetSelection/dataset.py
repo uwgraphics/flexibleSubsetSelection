@@ -125,7 +125,7 @@ class Dataset:
             self._features = list(df.columns)
 
         self._transforms = Transforms(self._array)
-        log.info("Dataset '%s' created with backend '%s'.", name, backend)
+        log.info("Created '%s' dataset with backend '%s'.", name, backend)
 
     @property
     def rows(self) -> int:
@@ -362,6 +362,9 @@ class Dataset:
         log.info("Data successfully saved at '%s'.", filePath)
 
     def __repr__(self) -> str:
+        """
+        A detailed string representation of the Dataset object.
+        """
         transformStr = (
             f", transforms=original→{'→'.join(self._transforms.queued[1:])}"
             if len(self._transforms) > 1
@@ -373,6 +376,9 @@ class Dataset:
         )
 
     def __str__(self) -> str:
+        """
+        A user-friendly string representation of the Dataset object.
+        """
         transforms = self._transforms.queued[1:]
         if len(transforms) == 0:
             transformStr = ""
@@ -388,7 +394,7 @@ class Dataset:
             f"{', ...' if len(self.features) > 3 else ''}]"
         )
         return (
-            f"Dataset {self.name}: {self.size[0]} rows x "
+            f"Dataset {self.name}: {self.size[0]} rows × "
             f"{self.size[1]} features {featureStr} {transformStr}"
         )
 

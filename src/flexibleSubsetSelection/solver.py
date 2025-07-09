@@ -31,7 +31,7 @@ class Solver:
         self,
         algorithm: Callable,
         lossFunction: UniCriterion | MultiCriterion | None = None,
-        savePath: str = "../data/solverData.csv",
+        savePath: str = "../data/solverData.csv"
     ) -> None:
         """
         Initialize a subset selection solver with a solve algorithm and,
@@ -42,13 +42,6 @@ class Solver:
             loss: The loss function class object.
             savePath: The path to the solver save file.
         """
-        log.debug(
-            ("Initializing Solver with algorithm: %s, lossFunction: %s, savePath: %s"),
-            algorithm.__name__,
-            lossFunction,
-            savePath,
-        )
-
         self.algorithm = algorithm
         self.lossFunction = lossFunction
         self.savePath = savePath
@@ -71,7 +64,7 @@ class Solver:
         except FileExistsError:
             log.debug("Log file already exists at %s", self.savePath)
 
-        log.info("Initialized a '%s' solver.", algorithm.__name__)
+        log.info("Initialized %s.", self)
 
     def solve(self, dataset: Dataset, **parameters) -> Subset:
         """
@@ -132,7 +125,9 @@ class Solver:
         computationTime: float,
         loss: float,
     ) -> None:
-        # Write performance data to the save file
+        """
+        Save solver performance metrics to a CSV file.
+        """
         with open(self.savePath, "a", newline="") as fp:
             writer = csv.writer(fp)
             writer.writerow(
@@ -147,7 +142,7 @@ class Solver:
                 ]
             )
 
-        log.info("Saved solver performance data to %s.", self.savePath)
+        log.info("Saved %s performance data to %s.", self, self.savePath)
 
     def __repr__(self) -> str:
         """
@@ -163,6 +158,6 @@ class Solver:
         Return a user-friendly string representation of the Solver object.
         """
         return (
-            f"Solves algorithm {self.algorithm.__name__}, "
-            f" with {self.lossFunction} loss."
+            f"solver using '{self.algorithm.__name__}' algorithm "
+            f"to minimize '{self.lossFunction}'" 
         )

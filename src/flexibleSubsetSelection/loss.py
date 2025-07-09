@@ -56,13 +56,8 @@ class MultiCriterion:
         self.parameters = parameters
         self.weights = weights
 
-        log.debug(
-            "Initialized a multi-criterion loss function with "
-            "objectives: %s, parameters: %s, and weights: %s",
-            objectives,
-            parameters,
-            weights,
-        )
+        log.info("Initialized multi-criterion loss function: %s", self)
+
 
     def __call__(self, dataset: Dataset, z: ArrayLike) -> float:
         """
@@ -96,28 +91,46 @@ class MultiCriterion:
             loss += objectiveLoss
         return loss
 
+    def __repr__(self) -> str:
+        """
+        A detailed string representation of the loss function.
+        """
+        objectives_str = [obj.__name__ for obj in self.objectives]
+        return (
+            f"MultiCriterion(objectives={objectives_str}, "
+            f"parameters={self.parameters}, weights={self.weights.tolist()})"
+        )
+
     def __str__(self) -> str:
         """
-        Return a string representation of the MultiCriterion loss function.
+        A user-friendly string representation of the loss function.
         """
-        zipped = zip(self.objectives, self.parameters, self.weights)
-        objectives = []
-        for objective, parameter, weight in zipped:
-            parameters = []
-            for key, value in parameter.items():
-                if callable(value):
-                    parameters.append(f"{key}: {value.__name__}")
-                if key == "solveArray" and value != "array":
-                    parameters.append(value)
-            parameters = ", ".join(parameters)
+        parts = []
+        objs = zip(self.objectives, self.parameters, self.weights)
+        for objective, params, weight in objs:
+            subparts = []
 
-            if len(parameters) > 0:
-                objectives.append((f"{weight}*({objective.__name__}, {{parameters}})"))
-            else:
-                objectives.append(f"{weight}*({objective.__name__})")
+            if params.get("solveArray", "original") != "original":
+                subparts.append(f"{params['solveArray']} array")
+            if params.get("selectBy", "row") != "row":
+                subparts.append(f"select by {params['selectBy']}")
 
-        objectives = " + ".join(objectives)
-        return f"Multi-criterion: {objectives}"
+            for k, v in params.items():
+                if k in ["solveArray", "selectBy"]:
+                    continue
+                if isinstance(v, np.ndarray):
+                    continue
+                if callable(v):
+                    subparts.append(f"{v.__name__} {k}")
+                elif isinstance(v, str):
+                    subparts.append(f"{v} {k}")
+                else:
+                    subparts.append(f"{k}={v}")
+
+            joined = ", ".join(subparts)
+            parts.append(f"{weight}*{objective.__name__}({joined})")
+
+        return " + ".join(parts)
 
 
 class UniCriterion:
@@ -149,15 +162,7 @@ class UniCriterion:
         self.selectBy = selectBy
         self.parameters = parameters
 
-        log.info(
-            "Initialized a uni-criterion loss function with "
-            "objective: %s, solve array: %s, selection method: %s, "
-            "and parameters: %s",
-            objective.__name__,
-            solveArray,
-            selectBy,
-            parameters,
-        )
+        log.info("Initialized uni-criterion loss function: %s", self)
 
     def __call__(self, dataset: Dataset, z: ArrayLike) -> float:
         """
@@ -175,19 +180,36 @@ class UniCriterion:
         array = getattr(dataset, self.solveArray)
         subset = Subset.select(array, z, selectBy=self.selectBy)
         return self.objective(subset, **self.parameters)
+    
+    def __repr__(self) -> str:
+        """
+        A detailed string representation of the loss function.
+        """
+        return (
+            f"UniCriterion(objective={self.objective.__name__}, "
+            f"solveArray={self.solveArray}, selectBy={self.selectBy}, "
+            f"parameters={self.parameters})"
+        )
 
     def __str__(self) -> str:
         """
-        Return a string representation of the UniCriterion loss function.
+        A user-friendly string representation of the loss function.
         """
-        parameters = []
-        for key, value in self.parameters.items():
-            if callable(value):
-                parameters.append(value.__name__)
-        if self.solveArray != "array":
-            parameters.append(self.solveArray)
-        parameters = ", ".join(parameters)
+        parts = []
 
-        if parameters:
-            return f"Uni-criterion: {self.objective.__name__}, {parameters}"
-        return f"Uni-criterion: {self.objective.__name__}"
+        if self.solveArray != "original":
+            parts.append(f"{self.solveArray} array")
+        if self.selectBy != "row":
+            parts.append(f"select by {self.selectBy}")
+
+        for k, v in self.parameters.items():
+            if isinstance(v, np.ndarray):
+                continue 
+            if callable(v):
+                parts.append(f"{v.__name__} {k}")
+            elif isinstance(v, str):
+                parts.append(f"{v} {k}")
+            else:
+                parts.append(f"{k}={v}")
+
+        return f"{self.objective.__name__}({', '.join(parts)})"

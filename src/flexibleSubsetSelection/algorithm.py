@@ -244,6 +244,150 @@ def greedySwap(
 
     return z, loss  # return indicator and final loss
 
+def greedySwapG(
+    dataset,
+    lossFunction,
+    subsetSize,
+    minLoss: float = 0,
+    maxIterations: int | None = None,
+    swapRange: tuple[int, int] = (1, 20),  # (min, max) number of swaps per iteration
+    seed=None,
+    callback=None,
+):
+    """
+    Greedy multi-swap subset selection algorithm with randomized swap counts per iteration.
+    """
+    rng = np.random.default_rng(seed)
+    log.debug("Solving for a subset of size %s.", subsetSize)
+
+    z, _ = randomSample(dataset.size, subsetSize, rng)
+    currentLoss = lossFunction(dataset, z)
+    iterations = 0
+
+    if maxIterations is None:
+        maxIterations = 10 * subsetSize
+
+    for iter_ in range(maxIterations):
+        if callback:
+            callback(iterations, currentLoss)
+        log.debug("Iter %d: loss %.6f", iter_, currentLoss)
+
+        num_swaps = rng.integers(*swapRange)
+        in_idx = np.where(z)[0]
+        out_idx = np.where(~z)[0]
+
+        if len(in_idx) < num_swaps or len(out_idx) < num_swaps:
+            log.debug("Not enough elements to swap — stopping.")
+            break
+
+        # Propose multi-swap
+        idxs_out = rng.choice(in_idx, size=num_swaps, replace=False)
+        idxs_in = rng.choice(out_idx, size=num_swaps, replace=False)
+
+        z_new = z.copy()
+        z_new[idxs_out] = False
+        z_new[idxs_in] = True
+
+        newLoss = lossFunction(dataset, z_new)
+        iterations += 1
+
+        if newLoss < currentLoss:
+            z = z_new
+            currentLoss = newLoss
+            log.debug("  accepted %d swaps → loss %.6f", num_swaps, currentLoss)
+            if currentLoss <= minLoss:
+                log.debug("Reached minLoss %.6f — terminating.", currentLoss)
+                break
+        else:
+            log.debug("  rejected %d swaps", num_swaps)
+
+    return z, currentLoss
+
+def simulatedAnnealing(
+    dataset,
+    lossFunction,
+    subsetSize: int,
+    *,
+    Tmax: float = 1.0,          # initial temperature
+    Tmin: float = 1e-3,         # final temperature
+    cooling: float = 0.9,      # geometric cooling factor (0<T<1)
+    steps_per_T: int = 50,     # how many proposals per temperature level
+    swap_range: tuple[int,int] = (1, 5000),  # min / max points swapped per proposal
+    seed=None,
+    callback=None,
+):
+    """
+    Simulated-annealing subset selection.
+
+    Parameters
+    ----------
+    dataset       : your Dataset object
+    lossFunction  : callable(dataset, z) -> float
+    subsetSize    : desired subset cardinality
+    Tmax, Tmin    : start / end temperature
+    cooling       : geometric cooling factor (e.g. 0.95)
+    steps_per_T   : proposals evaluated at each temperature
+    swap_range    : (min,max) number of indices swapped in one proposal
+    seed          : RNG seed / Generator
+    callback      : optional f(iterations, loss, T) for live plotting
+    """
+    rng = np.random.default_rng(seed)
+
+    # --- initial subset ------------------------------------------------------
+    z, _ = randomSample(dataset.size, subsetSize, rng)
+    best_z  = z.copy()
+    curLoss = bestLoss = lossFunction(dataset, z)
+    iterations = 0
+    T = Tmax
+
+    in_idx  = np.where(z)[0]
+    out_idx = np.where(~z)[0]
+
+    log.info("SA start: loss %.6f", curLoss)
+
+    # --- annealing loop ------------------------------------------------------
+    while T > Tmin:
+        for _ in range(steps_per_T):
+            # -- propose a random multi-swap ----------------------------
+            k = rng.integers(*swap_range)                 # how many to swap
+            if k > len(in_idx) or k > len(out_idx):
+                k = min(len(in_idx), len(out_idx))
+                if k == 0:
+                    break
+
+            idx_out = rng.choice(in_idx,  size=k, replace=False)
+            idx_in  = rng.choice(out_idx, size=k, replace=False)
+
+            z_new = z.copy()
+            z_new[idx_out] = False
+            z_new[idx_in]  = True
+            newLoss = lossFunction(dataset, z_new)
+            iterations += 1
+
+            # -- Metropolis acceptance test ----------------------------
+            dE = newLoss - curLoss
+            accept = (dE < 0) or (rng.random() < math.exp(-dE / T))
+
+            if accept:
+                z        = z_new
+                curLoss  = newLoss
+                in_idx   = np.where(z)[0]
+                out_idx  = np.where(~z)[0]
+
+                if curLoss < bestLoss:
+                    bestLoss = curLoss
+                    best_z   = z.copy()
+
+                if callback:
+                    callback(iterations, curLoss)
+
+                log.debug("T=%.4g  best=%.6f  current=%.6f", T, bestLoss, curLoss)
+
+        T *= cooling  # geometric cooling
+
+    log.info("SA done: best loss %.6f after %d loss evaluations", bestLoss, iterations)
+    return best_z, bestLoss
+
 
 def greedyMinSubset(
     dataset,
