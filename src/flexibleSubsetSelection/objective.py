@@ -171,7 +171,6 @@ def emdCategorical(subset, dataset, features, categorical, categories):
 
 
 def entropy(array: np.ndarray) -> float:
-    counts = Counter(map(tuple, array))
-    total = sum(counts.values())
-    probabilities = np.array(list(counts.values())) / total
-    return np.sum(probabilities * np.log(probabilities))
+    _, counts = np.unique(array, axis=0, return_counts=True)
+    probs = counts / counts.sum()
+    return np.sum(probs * np.log(probs))

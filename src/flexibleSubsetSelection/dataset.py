@@ -195,7 +195,7 @@ class Dataset:
         Returns:
             A list of metric names.
         """
-        return list(self._metrics)
+        return self._metrics
 
     def compute(
         self, 
@@ -220,13 +220,6 @@ class Dataset:
         if array is None:
             array = "original"
 
-        if features is not None:
-            try:
-                indices = [self.features.index(f) for f in features]
-            except ValueError as e:
-                errorMessage = "Feature not found in 'compute()'."
-                log.exception(errorMessage)
-                raise RuntimeError(errorMessage) from e
         for name, function in metric.items():
             self._metrics[name] = Metric(
                 dataset = self, 
@@ -234,9 +227,8 @@ class Dataset:
                 function = function, 
                 array = array, 
                 params = params, 
-                indices = indices
+                features = features
             )
-
 
     def scale(
         self,
@@ -248,8 +240,7 @@ class Dataset:
 
         Args:
             interval: The interval to scale the data to.
-            features: The features to scale. All features will be scaled if
-                unspecified.
+            features: The features to scale. All will scale if unspecified
 
         Raises:
             ValueError: if features are not found
@@ -283,8 +274,7 @@ class Dataset:
 
         Args:
             bins: Number of bins to use, bins in each feature, or bin edges.
-            features: List of features to use for the binning. All features will
-                be encoded if unspecified.
+            features: List of features to bin. All will bin if unspecified.
             strategy: sklearn KBinsDiscretizer strategy to use.
 
         Raises:
@@ -315,8 +305,7 @@ class Dataset:
         assuming they are discrete.
 
         Args:
-            features: The features to use for the binning. All features will be
-                encoded if unspecified.
+            features: The features to encode. All will encode if unspecified.
             dimensions: The number of dimensions to take the encoding in
 
         Raises:
@@ -373,34 +362,34 @@ class Dataset:
         log.info("Data successfully saved at '%s'.", filePath)
 
     def __repr__(self) -> str:
-        transformString = (
+        transformStr = (
             f", transforms=original→{'→'.join(self._transforms.queued[1:])}"
             if len(self._transforms) > 1
             else ""
         )
         return (
             f"Dataset(name='{self.name}', size={self.size}, "
-            f"features={self.features} {transformString})"
+            f"features={self.features} {transformStr})"
         )
 
     def __str__(self) -> str:
         transforms = self._transforms.queued[1:]
         if len(transforms) == 0:
-            transformString = ""
+            transformStr = ""
         elif len(transforms) == 1:
-            transformString = f"{transforms[0]}"
+            transformStr = f"{transforms[0]}"
         elif len(transforms) == 2:
-            transformString = f"{transforms[0]} and {transforms[1]}"
+            transformStr = f"{transforms[0]} and {transforms[1]}"
         else:
-            transformString = f"{', '.join(transforms[:-1])} and {transforms[-1]}"
+            transformStr = f"{', '.join(transforms[:-1])} and {transforms[-1]}"
 
-        featureString = (
+        featureStr = (
             f"[{', '.join(map(str, self.features[:3]))}"
             f"{', ...' if len(self.features) > 3 else ''}]"
         )
         return (
             f"Dataset {self.name}: {self.size[0]} rows x "
-            f"{self.size[1]} features {featureString} {transformString}"
+            f"{self.size[1]} features {featureStr} {transformStr}"
         )
 
     def __len__(self) -> int:
@@ -411,13 +400,15 @@ class Dataset:
 
     def __getattr__(self, attr: str) -> np.ndarray:
         """
-        Returns the specified transformed version of the dataset.
+        Returns paramters of the dataset.
 
         Args:
-            attr: Specify the name of a transform function
+            attr: Specify the parameter to get
         """
         if attr in self._transforms.queued:
             return self._transforms[attr]
+        elif attr in self._metrics:
+            return self._metrics[attr]()
         else:
             raise AttributeError(f"'Dataset' object has no attribute '{attr}'")
 

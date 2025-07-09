@@ -62,13 +62,6 @@ class Subset:
         self.loss = loss
         log.info("Created %s.", self)
 
-    @property
-    def transforms(self) -> list[str]:
-        """
-        Expose available dataset transformations (mirrored from dataset).
-        """
-        return self.dataset.transforms
-
     @classmethod
     def load(
         cls,
@@ -112,7 +105,7 @@ class Subset:
         name: str = None,
     ) -> None:
         """
-        Save the subset to pickle for convenience or to csv for portability.
+        Save the subset to pickle for convenience or csv for portability.
 
         Args:
             fileType: The file format to save the data: 'pickle' or 'csv'.
@@ -183,23 +176,35 @@ class Subset:
     def __len__(self) -> int:
         return self.size[0]
 
-    @staticmethod
-    def select(array: np.ndarray, z: np.ndarray, selectBy: str) -> np.ndarray:
+    @property
+    def transforms(self) -> list[str]:
         """
-        Selects a subset from array according to indicator z
+        Expose available dataset transformations (mirrored from dataset).
+        """
+        return self.dataset.transforms
+
+    @staticmethod
+    def select(
+        array: np.ndarray, 
+        z: np.ndarray[bool], 
+        selectBy: str
+    ) -> np.ndarray:
+        """
+        Selects a subset from array according to indicator vector z.
 
         Args:
             array: The array to select from.
             z: The indicator vector indicating which elements to select.
-            selectBy: The method to select the subset (row or matrix).
+            selectBy: 'row' for row selection of tabular data or 'matrix' for 
+                selection from square matrix e.g. distance matrix
 
         Returns: The selected subset from the array.
 
         Raises: ValueError: If an unknown selection method is specified.
         """
         if selectBy == "row":
-            return array[z == 1]
+            return array[z]
         elif selectBy == "matrix":
-            return array[z == 1][:, z == 1]
+            return array[z][:, z]
         else:
             raise ValueError("Unknown selection method specified.")

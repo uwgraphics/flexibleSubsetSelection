@@ -10,7 +10,6 @@ from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
 
 # Local files
-from .dataset import Dataset
 from . import logger
 
 # Setup logger
@@ -25,12 +24,12 @@ class Metric:
 
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: "Dataset",
         name: str,
         function: Callable,
         array: str,
         params: dict[str, Any] | None = None,
-        indices: list[int]| None = None
+        features: list[int]| None = None
     ):
         """
         Initialize a metric with a metric function and additional parameters
@@ -39,7 +38,7 @@ class Metric:
         self.name = name
         self.params = params
         self.array = array
-        self._indices = indices
+        self._features = features
         self._dataset = dataset 
         self._value = None
 
@@ -48,8 +47,15 @@ class Metric:
     def __call__(self):
         if self._value is None:
             array = getattr(self._dataset, self.array)
-            if self._indices is not None:
-                array = array[:, self._indices]
+            if self._features is not None:
+                try:
+                    features = self._dataset.features
+                    indices = [features.index(f) for f in self._features]
+                    array = array[:, indices]
+                except ValueError as e:
+                    errorMessage = "Feature not found in 'compute()'."
+                    log.exception(errorMessage)
+                    raise RuntimeError(errorMessage) from e
             if self.params is None:
                 self._value = self.function(array)
             else:
@@ -112,7 +118,6 @@ def discreteDistribution(array: np.ndarray) -> np.ndarray:
     Returns the discrete distribution of the one hot encoded array
     """
     return np.mean(array, axis=0)
-
 
 def clusterCenters(array: np.ndarray, k: int) -> np.ndarray:
     """

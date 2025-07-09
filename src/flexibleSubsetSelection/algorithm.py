@@ -1,5 +1,7 @@
 # --- Imports ------------------------------------------------------------------
 
+import math
+
 # Third party
 import cvxpy as cp
 import gurobipy as gp
@@ -34,8 +36,8 @@ def randomSample(
     """
     rng = np.random.default_rng(seed)
     indices = rng.choice(datasetSize[0], size=subsetSize, replace=False)
-    z = np.zeros(datasetSize[0])
-    z[indices] = 1
+    z = np.zeros(datasetSize[0], dtype=bool)
+    z[indices] = True
     return z, indices
 
 
