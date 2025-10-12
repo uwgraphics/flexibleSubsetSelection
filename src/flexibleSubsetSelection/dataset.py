@@ -32,7 +32,7 @@ class Dataset:
     def __init__(self, 
         name: str,
         data: pd.DataFrame | np.ndarray | str | Table | None = None,
-        randTypes: str | list[str] | None = None, 
+        random: str | tuple[str, dict] | list[tuple[str, dict]] | None = None,
         size: tuple[int, int] | None = None, 
         interval: tuple[float, float] = (1.0, 5.0), 
         features: list[str] | None = None, 
@@ -46,11 +46,11 @@ class Dataset:
             name: The name of the dataset and the Ibis table storing it
             data: Specify the dataset with a dataframe, array, filepath, or Ibis
                 table, or use random data generation.
-            randTypes: The method(s) for random data generation. Supported
-                methods: "uniform", "binary", "categories", "normal",
-                "multimodal", "skew", "blobs".
+            random: The method(s) for random data generation. Supported
+                methods: "uniform", "binary", "categorical", "normal",
+                "multimodal", "skew", "blobs" and optional parameters.
             size: The size of the dataset to generate (rows, columns).
-            interval: The interval range for generating or scaling data. 
+            interval: The interval range for scaling data. 
             features: The list of column features to assign to the dataset.
             seed: The random seed or NumPy generator for reproducibility. 
             backend: The Ibis backend for execution. (e.g., "duckdb", "pandas", 
@@ -103,17 +103,14 @@ class Dataset:
 
         # Initialize dataset with random data generation
         else:
-            if randTypes is None: 
-                raise ValueError("No data or random generation type specified.")
-            elif isinstance(randTypes, str):
-                randTypes = [randTypes]
+            if random is None: 
+                raise ValueError("No data or random generation specified.")
             if size is None:
                 raise ValueError("No size of data to generate specified.")
+            if isinstance(random, str):
+                random = [(random, {})]
             
-            df = pd.concat(
-                [generate.random(i, size, interval, seed) for i in randTypes], 
-                axis=1
-            )
+            df = generate.randomDataset(random, size, seed)
 
             if features is not None:
                 if len(features) != df.shape[1]:
@@ -122,7 +119,7 @@ class Dataset:
 
             self._table = self._conn.create_table(name, df)
             self._array = df.to_numpy()
-            self._size = size
+            self._size = df.shape
             self._features = list(df.columns)
 
         log.info("Dataset '%s' created with backend '%s'.", name, backend)
